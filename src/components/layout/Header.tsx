@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import Link from "next/link";
 import { MainNav } from "./MainNav";
 import { MobileNav } from "./MobileNav";
@@ -9,9 +11,39 @@ import { Input } from "@/components/ui/input";
 import { Search, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/cart-context";
+import { SearchBar } from "@/components/ui/search-bar";
 
 export function Header() {
     const { cartCount } = useCart();
+    const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+
+    if (isSearchOpen) {
+        return (
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="container relative flex h-16 items-center gap-4">
+                    <SearchBar className="flex-1" />
+                    <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(false)}>
+                        <span className="sr-only">Close search</span>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-5 w-5"
+                        >
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg>
+                    </Button>
+                </div>
+            </header>
+        );
+    }
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,15 +66,17 @@ export function Header() {
                 {/* Right Section: Search & User Actions */}
                 <div className="flex items-center space-x-4">
                     <div className="w-full md:w-auto hidden md:block">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search products..."
-                                className="pl-8 w-[200px] lg:w-[300px]"
-                            />
-                        </div>
+                        <SearchBar className="w-[200px] lg:w-[300px]" />
                     </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden"
+                        onClick={() => setIsSearchOpen(true)}
+                    >
+                        <Search className="h-5 w-5" />
+                        <span className="sr-only">Search</span>
+                    </Button>
                     <nav className="flex items-center space-x-2">
                         <Link href="/cart">
                             <Button variant="ghost" size="icon" className="relative">

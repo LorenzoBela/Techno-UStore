@@ -1,10 +1,12 @@
 "use client";
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+
+import { SearchBar } from "@/components/ui/search-bar";
 
 export function MobileNav() {
     const [open, setOpen] = useState(false);
@@ -18,6 +20,7 @@ export function MobileNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="pr-0">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="px-7">
                     <Link
                         href="/"
@@ -28,6 +31,7 @@ export function MobileNav() {
                     </Link>
                 </div>
                 <div className="flex flex-col gap-4 py-8 px-7">
+                    <SearchBar />
                     <Link
                         href="/"
                         className="text-sm font-medium hover:text-primary"
