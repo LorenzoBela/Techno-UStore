@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
         }
 
         const token = authHeader.split(" ")[1];
-        
+
         // Verify the token with Supabase
         const supabase = getSupabaseAdmin();
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -59,6 +59,13 @@ export async function POST(request: NextRequest) {
                     phone: user.user_metadata?.phone || user.phone,
                     role: "user",
                 },
+            });
+        }
+
+        // Sync role back to Supabase metadata so we can use it in the client
+        if (dbUser.role) {
+            await supabase.auth.admin.updateUserById(user.id, {
+                user_metadata: { role: dbUser.role }
             });
         }
 

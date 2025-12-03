@@ -20,15 +20,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Sync user to database
 async function syncUserToDatabase(accessToken: string) {
     try {
-        await fetch("/api/auth/sync", {
+        const response = await fetch("/api/auth/sync", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
             },
         });
+
+        if (!response.ok) {
+            throw new Error(`Sync failed with status ${response.status}`);
+        }
+
+        return await response.json();
     } catch (error) {
         console.error("Failed to sync user to database:", error);
+        return null;
     }
 }
 
@@ -41,28 +48,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const supabase = getSupabaseClient();
 
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error) {
+                console.error("Error getting session:", error);
+                setSession(null);
+                setUser(null);
+                setIsLoading(false);
+                return;
+            }
             setSession(session);
             setUser(session?.user ?? null);
             setIsLoading(false);
-            
+
             // Sync user to database on initial load if logged in
             if (session?.access_token) {
-                syncUserToDatabase(session.access_token);
+                syncUserToDatabase(session.access_token).then((data) => {
+                    console.log("Initial sync complete:", data);
+                    // If we have a role in the DB but not in the session, refresh
+                    if (data?.user?.role && session.user.user_metadata?.role !== data.user.role) {
+                        console.log("Refreshing session to get updated role...");
+                        supabase.auth.refreshSession();
+                    }
+                });
             }
+        }).catch((error) => {
+            console.error("Failed to get session:", error);
+            setSession(null);
+            setUser(null);
+            setIsLoading(false);
         });
 
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // Handle TOKEN_REFRESHED error or session issues
+            if (event === "TOKEN_REFRESHED" && !session) {
+                console.warn("Token refresh failed, clearing session");
+                setSession(null);
+                setUser(null);
+                setIsLoading(false);
+                return;
+            }
+
             setSession(session);
             setUser(session?.user ?? null);
             setIsLoading(false);
-            
+
             // Sync user to database on sign in
             if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.access_token) {
-                syncUserToDatabase(session.access_token);
+                console.log("Auth event:", event, "Syncing...");
+                const data = await syncUserToDatabase(session.access_token);
+                console.log("Sync complete:", data);
+
+                // If we have a role in the DB but not in the session, refresh
+                if (data?.user?.role && session.user.user_metadata?.role !== data.user.role) {
+                    console.log("Refreshing session to get updated role...");
+                    const { data: { session: newSession } } = await supabase.auth.refreshSession();
+                    if (newSession) {
+                        setSession(newSession);
+                        setUser(newSession.user);
+                    }
+                }
             }
         });
 

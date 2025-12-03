@@ -1,155 +1,113 @@
-export interface ProductVariant {
-    size: string;
-    stock: number;
-}
+import { prisma } from "@/lib/db";
+import { Product, ProductVariant, Category } from "@/lib/types";
 
-export interface Product {
+// Re-export types for convenience
+export type { Product, ProductVariant, Category } from "@/lib/types";
+
+// Helper to transform DB product to frontend Product
+function transformProduct(dbProduct: {
     id: string;
     name: string;
-    price: number;
-    image: string;
-    category: string;
-    isNew?: boolean;
+    description: string | null;
+    price: { toNumber: () => number } | number;
     stock: number;
-    variants?: ProductVariant[];
+    createdAt: Date;
+    category: { name: string };
+    images: { url: string }[];
+    variants: { name: string | null; size: string; color: string | null; stock: number; imageUrl: string | null }[];
+}): Product {
+    const now = new Date();
+    const createdAt = new Date(dbProduct.createdAt);
+    const daysDiff = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+        id: dbProduct.id,
+        name: dbProduct.name,
+        description: dbProduct.description || undefined,
+        price: typeof dbProduct.price === 'number' ? dbProduct.price : dbProduct.price.toNumber(),
+        image: dbProduct.images[0]?.url || "",
+        images: dbProduct.images.map(img => img.url),
+        category: dbProduct.category.name,
+        isNew: daysDiff <= 7, // Products created within 7 days are "new"
+        stock: dbProduct.stock,
+        variants: dbProduct.variants.map(v => ({
+            name: v.name || undefined,
+            size: v.size,
+            color: v.color || undefined,
+            stock: v.stock,
+            imageUrl: v.imageUrl || undefined,
+        })),
+    };
 }
 
-export const topApparel: Product[] = [
-    {
-        id: "a1",
-        name: "Adamson Hoodie 2024",
-        price: 850,
-        image: "",
-        category: "Apparel",
-        isNew: true,
-        stock: 50,
-        variants: [
-            { size: "S", stock: 10 },
-            { size: "M", stock: 20 },
-            { size: "L", stock: 15 },
-            { size: "XL", stock: 5 },
-        ],
-    },
-    {
-        id: "a2",
-        name: "Classic Blue T-Shirt",
-        price: 350,
-        image: "",
-        category: "Apparel",
-        stock: 100,
-        variants: [
-            { size: "S", stock: 20 },
-            { size: "M", stock: 40 },
-            { size: "L", stock: 30 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-    {
-        id: "a3",
-        name: "Falcon Varsity Jacket",
-        price: 1200,
-        image: "",
-        category: "Apparel",
-        stock: 30,
-        variants: [
-            { size: "S", stock: 5 },
-            { size: "M", stock: 10 },
-            { size: "L", stock: 10 },
-            { size: "XL", stock: 5 },
-        ],
-    },
-    {
-        id: "a4",
-        name: "Polo Shirt - White",
-        price: 550,
-        image: "",
-        category: "Apparel",
-        stock: 75,
-        variants: [
-            { size: "S", stock: 15 },
-            { size: "M", stock: 30 },
-            { size: "L", stock: 20 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-];
+// Fetch products by category slug
+export async function getProductsByCategory(categorySlug: string, limit?: number): Promise<Product[]> {
+    const products = await prisma.product.findMany({
+        where: {
+            category: {
+                slug: categorySlug.toLowerCase(),
+            },
+        },
+        include: {
+            category: true,
+            images: true,
+            variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+    });
 
-export const topAccessories: Product[] = [
-    { id: "ac1", name: "University Lanyard", price: 150, image: "", category: "Accessories", stock: 200 },
-    { id: "ac2", name: "Blue Cap", price: 250, image: "", category: "Accessories", stock: 60 },
-    { id: "ac3", name: "Tote Bag", price: 300, image: "", category: "Accessories", isNew: true, stock: 40 },
-    { id: "ac4", name: "Umbrella", price: 400, image: "", category: "Accessories", stock: 80 },
-];
+    return products.map(transformProduct);
+}
 
-export const topSupplies: Product[] = [
-    { id: "s1", name: "Spiral Notebook", price: 80, image: "", category: "Supplies", stock: 150 },
-    { id: "s2", name: "Ballpen Set", price: 50, image: "", category: "Supplies", stock: 300 },
-    { id: "s3", name: "Art Kit", price: 450, image: "", category: "Supplies", isNew: true, stock: 25 },
-    { id: "s4", name: "Folder", price: 20, image: "", category: "Supplies", stock: 500 },
-];
+// Fetch top products for each category (for home page)
+export async function getTopProductsByCategory(categorySlug: string, limit: number = 4): Promise<Product[]> {
+    return getProductsByCategory(categorySlug, limit);
+}
 
-export const topUniforms: Product[] = [
-    {
-        id: "u1",
-        name: "PE T-Shirt",
-        price: 350,
-        image: "",
-        category: "Uniforms",
-        stock: 100,
-        variants: [
-            { size: "S", stock: 20 },
-            { size: "M", stock: 40 },
-            { size: "L", stock: 30 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-    {
-        id: "u2",
-        name: "PE Jogging Pants",
-        price: 450,
-        image: "",
-        category: "Uniforms",
-        stock: 90,
-        variants: [
-            { size: "S", stock: 20 },
-            { size: "M", stock: 30 },
-            { size: "L", stock: 30 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-    {
-        id: "u3",
-        name: "School Uniform (M)",
-        price: 650,
-        image: "",
-        category: "Uniforms",
-        stock: 60,
-        variants: [
-            { size: "S", stock: 10 },
-            { size: "M", stock: 20 },
-            { size: "L", stock: 20 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-    {
-        id: "u4",
-        name: "School Uniform (F)",
-        price: 650,
-        image: "",
-        category: "Uniforms",
-        stock: 60,
-        variants: [
-            { size: "S", stock: 10 },
-            { size: "M", stock: 20 },
-            { size: "L", stock: 20 },
-            { size: "XL", stock: 10 },
-        ],
-    },
-];
+// Fetch all products
+export async function getAllProducts(): Promise<Product[]> {
+    const products = await prisma.product.findMany({
+        include: {
+            category: true,
+            images: true,
+            variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+    });
 
-export const allProducts: Product[] = [
-    ...topApparel,
-    ...topAccessories,
-    ...topSupplies,
-    ...topUniforms,
-];
+    return products.map(transformProduct);
+}
+
+// Fetch a single product by ID
+export async function getProductById(id: string): Promise<Product | null> {
+    const product = await prisma.product.findUnique({
+        where: { id },
+        include: {
+            category: true,
+            images: true,
+            variants: true,
+        },
+    });
+
+    if (!product) return null;
+    return transformProduct(product);
+}
+
+// Fetch all categories
+export async function getAllCategories(): Promise<{ name: string; slug: string; count: number }[]> {
+    const categories = await prisma.category.findMany({
+        include: {
+            _count: {
+                select: { products: true },
+            },
+        },
+        orderBy: { name: "asc" },
+    });
+
+    return categories.map(cat => ({
+        name: cat.name,
+        slug: cat.slug,
+        count: cat._count.products,
+    }));
+}

@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/admin/Sidebar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 
 export default function AdminLayout({
@@ -12,20 +13,26 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const { user, isLoading } = useAuth();
     const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
+        if (isLoading) return;
+
         // Simple check for the cookie we set in login
         const hasAdminSession = document.cookie
             .split("; ")
             .find((row) => row.startsWith("admin_session="));
 
-        if (!hasAdminSession) {
+        // Check for admin role in user metadata
+        const hasAdminRole = user?.user_metadata?.role === "admin";
+
+        if (!hasAdminSession && !hasAdminRole) {
             router.push("/login");
         } else {
             setIsAuthorized(true);
         }
-    }, [router]);
+    }, [router, user, isLoading]);
 
     if (!isAuthorized) {
         return null; // or a loading spinner

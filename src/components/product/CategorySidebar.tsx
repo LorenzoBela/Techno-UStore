@@ -7,15 +7,23 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
-interface CategorySidebarProps {
-    currentCategory: string;
+interface Category {
+    name: string;
+    slug: string;
+    count: number;
 }
 
-const categories = [
-    { name: "Apparel", slug: "apparel" },
-    { name: "Accessories", slug: "accessories" },
-    { name: "Supplies", slug: "supplies" },
-    { name: "Uniforms", slug: "uniforms" },
+interface CategorySidebarProps {
+    currentCategory: string;
+    categories?: Category[];
+}
+
+// Fallback categories if none provided
+const defaultCategories: Category[] = [
+    { name: "Apparel", slug: "apparel", count: 0 },
+    { name: "Accessories", slug: "accessories", count: 0 },
+    { name: "Supplies", slug: "supplies", count: 0 },
+    { name: "Uniforms", slug: "uniforms", count: 0 },
 ];
 
 const subcategories: Record<string, string[]> = {
@@ -25,7 +33,8 @@ const subcategories: Record<string, string[]> = {
     uniforms: ["PE Uniforms", "School Uniforms", "Org Shirts"],
 };
 
-export function CategorySidebar({ currentCategory }: CategorySidebarProps) {
+export function CategorySidebar({ currentCategory, categories }: CategorySidebarProps) {
+    const displayCategories = categories && categories.length > 0 ? categories : defaultCategories;
     const currentSubcategories = subcategories[currentCategory.toLowerCase()] || [];
 
     return (
@@ -34,7 +43,7 @@ export function CategorySidebar({ currentCategory }: CategorySidebarProps) {
             <div className="flex flex-col gap-4">
                 <h3 className="font-semibold text-lg">Categories</h3>
                 <div className="flex flex-col gap-2">
-                    {categories.map((category) => (
+                    {displayCategories.map((category) => (
                         <Link key={category.slug} href={`/category/${category.slug}`}>
                             <Button
                                 variant={currentCategory === category.slug ? "default" : "ghost"}
@@ -46,6 +55,9 @@ export function CategorySidebar({ currentCategory }: CategorySidebarProps) {
                                 )}
                             >
                                 {category.name}
+                                {category.count > 0 && (
+                                    <span className="ml-auto text-xs opacity-60">({category.count})</span>
+                                )}
                             </Button>
                         </Link>
                     ))}

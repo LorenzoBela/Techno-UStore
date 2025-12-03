@@ -10,8 +10,11 @@ interface Product {
     name: string;
     price: number;
     image: string;
+    images?: string[];
     category: string;
     isNew?: boolean;
+    stock?: number;
+    description?: string;
 }
 
 interface CategoryShowcaseProps {

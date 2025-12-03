@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Product } from "@/lib/products";
+import { Product } from "@/lib/types";
 import { Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { updateProduct } from "@/app/admin/products/product-actions";
+import { toast } from "sonner";
 
 interface EditProductDialogProps {
     open: boolean;
@@ -25,6 +27,7 @@ export function EditProductDialog({
     product,
 }: EditProductDialogProps) {
     const [formData, setFormData] = useState<Product>(product);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setFormData(product);
@@ -38,16 +41,38 @@ export function EditProductDialog({
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, this would call an API to update the product
-        console.log("Updated product:", formData);
-        onOpenChange(false);
+        setIsLoading(true);
+
+        const result = await updateProduct(product.id, {
+            name: formData.name,
+            description: formData.description || "",
+            price: formData.price,
+            stock: formData.stock,
+            category: formData.category,
+            images: formData.images || [],
+            variants: formData.variants?.map(v => ({
+                name: v.name,
+                size: v.size,
+                color: v.color,
+                stock: v.stock,
+                imageUrl: v.imageUrl
+            }))
+        });
+
+        if (result.error) {
+            toast.error(result.error);
+        } else {
+            toast.success("Product updated successfully");
+            onOpenChange(false);
+        }
+        setIsLoading(false);
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>Edit Product</DialogTitle>
                     <DialogDescription>
@@ -101,7 +126,7 @@ export function EditProductDialog({
                                                 ...prev,
                                                 variants: [
                                                     ...(prev.variants || []),
-                                                    { size: "", stock: 0 },
+                                                    { name: "", size: "", color: "", stock: 0 },
                                                 ],
                                             }))
                                         }
@@ -111,23 +136,61 @@ export function EditProductDialog({
                                 </div>
                                 <div className="space-y-2">
                                     {formData.variants && formData.variants.length > 0 && (
-                                        <div className="grid grid-cols-5 gap-4 px-1">
-                                            <Label className="col-span-2 text-xs text-muted-foreground">Size</Label>
-                                            <Label className="col-span-2 text-xs text-muted-foreground">Stock</Label>
+                                        <div className="grid grid-cols-7 gap-2 px-1">
+                                            <Label className="col-span-2 text-xs text-muted-foreground">Name</Label>
+                                            <Label className="col-span-1 text-xs text-muted-foreground">Size</Label>
+                                            <Label className="col-span-2 text-xs text-muted-foreground">Color</Label>
+                                            <Label className="col-span-1 text-xs text-muted-foreground">Stock</Label>
                                             <span className="col-span-1"></span>
                                         </div>
                                     )}
                                     {formData.variants?.map((variant, index) => (
                                         <div
                                             key={index}
-                                            className="grid grid-cols-5 items-center gap-4"
+                                            className="grid grid-cols-7 items-center gap-2"
                                         >
+                                            <Input
+                                                placeholder="Variant Name"
+                                                value={variant.name || ""}
+                                                onChange={(e) => {
+                                                    const newVariants = [...(formData.variants || [])];
+                                                    newVariants[index] = { ...newVariants[index], name: e.target.value };
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        variants: newVariants,
+                                                    }));
+                                                }}
+                                                className="col-span-2"
+                                            />
                                             <Input
                                                 placeholder="Size"
                                                 value={variant.size}
                                                 onChange={(e) => {
                                                     const newVariants = [...(formData.variants || [])];
                                                     newVariants[index].size = e.target.value;
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        variants: newVariants,
+                                                    }));
+                                                }}
+                                                className="col-span-1"
+                                            />
+                                                onChange={(e) => {
+                                                    const newVariants = [...(formData.variants || [])];
+                                                    newVariants[index].size = e.target.value;
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        variants: newVariants,
+                                                    }));
+                                                }}
+                                                className="col-span-2"
+                                            />
+                                            <Input
+                                                placeholder="Color"
+                                                value={variant.color || ""}
+                                                onChange={(e) => {
+                                                    const newVariants = [...(formData.variants || [])];
+                                                    newVariants[index].color = e.target.value;
                                                     setFormData((prev) => ({
                                                         ...prev,
                                                         variants: newVariants,
@@ -147,7 +210,7 @@ export function EditProductDialog({
                                                         variants: newVariants,
                                                     }));
                                                 }}
-                                                className="col-span-2"
+                                                className="col-span-1"
                                             />
                                             <Button
                                                 type="button"
@@ -183,7 +246,9 @@ export function EditProductDialog({
                         )}
                     </div>
                     <DialogFooter>
-                        <Button type="submit">Save changes</Button>
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? "Saving..." : "Save changes"}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

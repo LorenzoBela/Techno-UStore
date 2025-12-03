@@ -4,15 +4,24 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { allProducts, Product } from "@/lib/products";
 import { cn } from "@/lib/utils";
+
+interface SearchProduct {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    category: string;
+}
 
 export function SearchBar({ className }: { className?: string }) {
     const router = useRouter();
     const [query, setQuery] = React.useState("");
     const [isOpen, setIsOpen] = React.useState(false);
-    const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
+    const [filteredProducts, setFilteredProducts] = React.useState<SearchProduct[]>([]);
+    const [isLoading, setIsLoading] = React.useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -27,20 +36,35 @@ export function SearchBar({ className }: { className?: string }) {
         };
     }, []);
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setQuery(value);
 
+        // Clear previous debounce
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
         if (value.length > 0) {
-            const filtered = allProducts.filter((product) =>
-                product.name.toLowerCase().includes(value.toLowerCase()) ||
-                product.category.toLowerCase().includes(value.toLowerCase())
-            );
-            setFilteredProducts(filtered);
-            setIsOpen(true);
+            setIsLoading(true);
+            // Debounce the API call
+            debounceRef.current = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/products/search?q=${encodeURIComponent(value)}`);
+                    const results = await response.json();
+                    setFilteredProducts(results);
+                    setIsOpen(true);
+                } catch (error) {
+                    console.error("Search error:", error);
+                    setFilteredProducts([]);
+                } finally {
+                    setIsLoading(false);
+                }
+            }, 300);
         } else {
             setFilteredProducts([]);
             setIsOpen(false);
+            setIsLoading(false);
         }
     };
 

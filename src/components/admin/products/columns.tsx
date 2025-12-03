@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Product } from "@/lib/products";
+import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -15,7 +15,7 @@ import {
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { ViewProductDialog } from "./view-product-dialog";
-import { EditProductDialog } from "./edit-product-dialog";
+import Link from "next/link";
 
 export const columns: ColumnDef<Product>[] = [
     {
@@ -76,6 +76,8 @@ export const columns: ColumnDef<Product>[] = [
                 </Button>
             );
         },
+        enableColumnFilter: true,
+        filterFn: "includesString",
     },
     {
         accessorKey: "category",
@@ -109,18 +111,12 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const product = row.original;
             const [showViewDialog, setShowViewDialog] = useState(false);
-            const [showEditDialog, setShowEditDialog] = useState(false);
 
             return (
                 <>
                     <ViewProductDialog
                         open={showViewDialog}
                         onOpenChange={setShowViewDialog}
-                        product={product}
-                    />
-                    <EditProductDialog
-                        open={showEditDialog}
-                        onOpenChange={setShowEditDialog}
                         product={product}
                     />
                     <DropdownMenu>
@@ -141,9 +137,11 @@ export const columns: ColumnDef<Product>[] = [
                             <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
                                 View details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-                                Edit product
-                            </DropdownMenuItem>
+                            <Link href={`/admin/products/${product.id}/edit`}>
+                                <DropdownMenuItem>
+                                    Edit product
+                                </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuItem className="text-destructive">
                                 Delete product
                             </DropdownMenuItem>

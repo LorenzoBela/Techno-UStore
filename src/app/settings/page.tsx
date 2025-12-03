@@ -8,6 +8,19 @@ import { toast } from "sonner";
 import { AccountTabs } from "@/components/layout/AccountTabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
+import { User } from "@supabase/supabase-js";
+
+// Helper to get avatar URL from various OAuth provider metadata
+function getAvatarUrl(user: User | null): string | undefined {
+    if (!user?.user_metadata) return undefined;
+    const metadata = user.user_metadata;
+    return (
+        (metadata.avatar_url as string) ||
+        (metadata.picture as string) ||
+        (metadata.avatar as string) ||
+        undefined
+    );
+}
 
 interface SettingsRowProps {
     label: string;
@@ -59,8 +72,9 @@ export default function SettingsPage() {
         );
     }
 
-    const displayName = user.user_metadata?.name || user.email?.split("@")[0] || "User";
-    const initials = displayName
+    const displayName = user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+    const avatarUrl = getAvatarUrl(user);
+    const initials = String(displayName)
         .split(" ")
         .map((n: string) => n[0])
         .join("")
@@ -79,13 +93,13 @@ export default function SettingsPage() {
         <div className="container max-w-5xl py-10">
             <div className="flex items-center gap-4 mb-8">
                 <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
-                    <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
+                    <AvatarImage src={avatarUrl} alt={String(displayName)} />
                     <AvatarFallback className="text-lg bg-primary/10 text-primary">
                         {initials}
                     </AvatarFallback>
                 </Avatar>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">{String(displayName)}</h1>
                     <Button variant="link" className="p-0 h-auto text-muted-foreground text-sm">
                         View profile
                     </Button>

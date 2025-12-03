@@ -3,11 +3,29 @@
 import { useAuth } from "@/lib/auth-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { getSupabaseClient } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AccountTabs } from "@/components/layout/AccountTabs";
+import { User } from "@supabase/supabase-js";
+
+// Helper to get avatar URL from various OAuth provider metadata
+function getAvatarUrl(user: User | null): string | undefined {
+    if (!user?.user_metadata) return undefined;
+    const metadata = user.user_metadata;
+    // Debug: log all metadata to see what's available
+    console.log("User metadata:", JSON.stringify(metadata, null, 2));
+    console.log("User identities:", JSON.stringify(user.identities, null, 2));
+    // Check common avatar URL fields from different OAuth providers
+    return (
+        (metadata.avatar_url as string) ||
+        (metadata.picture as string) ||
+        (metadata.avatar as string) ||
+        undefined
+    );
+}
 
 interface ProfileRowProps {
     label: string;
@@ -113,8 +131,9 @@ export default function ProfilePage() {
         );
     }
 
-    const displayName = user.user_metadata?.name || user.email?.split("@")[0] || "User";
-    const initials = displayName
+    const displayName = user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+    const avatarUrl = getAvatarUrl(user);
+    const initials = String(displayName)
         .split(" ")
         .map((n: string) => n[0])
         .join("")
@@ -122,22 +141,44 @@ export default function ProfilePage() {
         .slice(0, 2);
 
     const handleUpdatePhone = async (newPhone: string) => {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log("Updating phone to:", newPhone);
+        // Validation regex: 11 digits starting with 09 OR +639 followed by 9 digits
+        const phoneRegex = /^(09|\+639)\d{9}$/;
+
+        if (!phoneRegex.test(newPhone)) {
+            toast.error("Invalid phone number. Must be 11 digits starting with 09 or +639 format.");
+            throw new Error("Invalid phone number");
+        }
+
+        const supabase = getSupabaseClient();
+        
+        // Check for active session before updating
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            toast.error("Your session has expired. Please log in again.");
+            throw new Error("Auth session missing");
+        }
+
+        const { error } = await supabase.auth.updateUser({
+            data: { phone: newPhone }
+        });
+
+        if (error) {
+            console.error("Error updating phone:", error);
+            throw error;
+        }
     };
 
     return (
         <div className="container max-w-5xl py-10">
             <div className="flex items-center gap-4 mb-8">
                 <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
-                    <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
+                    <AvatarImage src={avatarUrl} alt={String(displayName)} />
                     <AvatarFallback className="text-lg bg-primary/10 text-primary">
                         {initials}
                     </AvatarFallback>
                 </Avatar>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">{String(displayName)}</h1>
                     <Button variant="link" className="p-0 h-auto text-muted-foreground text-sm">
                         View profile
                     </Button>
@@ -157,7 +198,7 @@ export default function ProfilePage() {
                 />
                 <ProfileRow
                     label="Phone Number"
-                    value={user.phone || "+63 900 000 0000"}
+                    value={user.user_metadata?.phone || user.phone || ""}
                     editable
                     onSave={handleUpdatePhone}
                 />

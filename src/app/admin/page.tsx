@@ -4,8 +4,28 @@ import { RecentOrdersWidget } from "@/components/admin/RecentOrdersWidget";
 import { TopProducts } from "@/components/admin/TopProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
+import {
+    getDashboardStats,
+    getMonthlyRevenue,
+    getRecentOrders,
+    getRecentSales,
+    getTopProducts,
+} from "./dashboard-actions";
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+    const [stats, monthlyRevenue, recentOrders, recentSales, topProducts] = await Promise.all([
+        getDashboardStats(),
+        getMonthlyRevenue(),
+        getRecentOrders(5),
+        getRecentSales(5),
+        getTopProducts(5),
+    ]);
+
+    // Calculate percentage changes
+    const orderChange = stats.lastMonthOrders > 0
+        ? ((stats.thisMonthOrders - stats.lastMonthOrders) / stats.lastMonthOrders * 100).toFixed(1)
+        : stats.thisMonthOrders > 0 ? "+100" : "0";
+
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
@@ -18,8 +38,8 @@ export default function AdminDashboardPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">₱45,231.89</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                        <div className="text-2xl font-bold">₱{stats.totalRevenue.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground">From completed orders</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -28,8 +48,10 @@ export default function AdminDashboardPage() {
                         <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+2350</div>
-                        <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+                        <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {Number(orderChange) >= 0 ? "+" : ""}{orderChange}% from last month
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -38,18 +60,18 @@ export default function AdminDashboardPage() {
                         <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+12,234</div>
-                        <p className="text-xs text-muted-foreground">+19% from last month</p>
+                        <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                        <p className="text-xs text-muted-foreground">Total in catalog</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Now</CardTitle>
+                        <CardTitle className="text-sm font-medium">Users</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+573</div>
-                        <p className="text-xs text-muted-foreground">+201 since last hour</p>
+                        <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                        <p className="text-xs text-muted-foreground">Registered users</p>
                     </CardContent>
                 </Card>
             </div>
@@ -59,18 +81,18 @@ export default function AdminDashboardPage() {
                         <CardTitle>Overview</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <Overview />
+                        <Overview data={monthlyRevenue} />
                     </CardContent>
                 </Card>
                 <Card className="col-span-3">
                     <CardHeader>
                         <CardTitle>Recent Sales</CardTitle>
                         <p className="text-sm text-muted-foreground">
-                            You made 265 sales this month.
+                            {recentSales.length > 0 ? `Latest ${recentSales.length} completed orders` : "No sales yet"}
                         </p>
                     </CardHeader>
                     <CardContent>
-                        <RecentSales />
+                        <RecentSales sales={recentSales} />
                     </CardContent>
                 </Card>
             </div>
@@ -80,7 +102,7 @@ export default function AdminDashboardPage() {
                         <CardTitle>Recent Orders</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <RecentOrdersWidget />
+                        <RecentOrdersWidget orders={recentOrders} />
                     </CardContent>
                 </Card>
                 <Card className="col-span-3">
@@ -88,7 +110,7 @@ export default function AdminDashboardPage() {
                         <CardTitle>Top Products</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <TopProducts />
+                        <TopProducts products={topProducts} />
                     </CardContent>
                 </Card>
             </div>

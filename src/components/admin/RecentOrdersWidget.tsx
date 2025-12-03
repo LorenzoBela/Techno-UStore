@@ -8,40 +8,37 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-const recentOrders = [
-    {
-        id: "ORD-005",
-        customer: "Pedro Penduko",
-        total: 1500,
-        status: "Processing",
-    },
-    {
-        id: "ORD-006",
-        customer: "Juan Tamad",
-        total: 300,
-        status: "Completed",
-    },
-    {
-        id: "ORD-007",
-        customer: "Maria Makiling",
-        total: 4500,
-        status: "Pending",
-    },
-    {
-        id: "ORD-008",
-        customer: "Lam-ang",
-        total: 850,
-        status: "Completed",
-    },
-    {
-        id: "ORD-009",
-        customer: "Bernardo Carpio",
-        total: 2100,
-        status: "Cancelled",
-    },
-];
+interface RecentOrder {
+    id: string;
+    customer: string;
+    total: number;
+    status: string;
+}
 
-export function RecentOrdersWidget() {
+interface RecentOrdersWidgetProps {
+    orders: RecentOrder[];
+}
+
+function getStatusDisplay(status: string) {
+    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+        pending: { label: "Pending", variant: "outline" },
+        awaiting_payment: { label: "Awaiting Payment", variant: "secondary" },
+        ready_for_pickup: { label: "Ready for Pickup", variant: "secondary" },
+        completed: { label: "Completed", variant: "default" },
+        cancelled: { label: "Cancelled", variant: "destructive" },
+    };
+    return statusMap[status] || { label: status, variant: "outline" };
+}
+
+export function RecentOrdersWidget({ orders }: RecentOrdersWidgetProps) {
+    if (!orders || orders.length === 0) {
+        return (
+            <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+                No orders yet
+            </div>
+        );
+    }
+
     return (
         <Table>
             <TableHeader>
@@ -53,28 +50,21 @@ export function RecentOrdersWidget() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {recentOrders.map((order) => (
-                    <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.customer}</TableCell>
-                        <TableCell>
-                            <Badge
-                                variant={
-                                    order.status === "Completed"
-                                        ? "default"
-                                        : order.status === "Processing"
-                                            ? "secondary"
-                                            : order.status === "Cancelled"
-                                                ? "destructive"
-                                                : "outline"
-                                }
-                            >
-                                {order.status}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">₱{order.total}</TableCell>
-                    </TableRow>
-                ))}
+                {orders.map((order) => {
+                    const statusDisplay = getStatusDisplay(order.status);
+                    return (
+                        <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.id.slice(0, 8).toUpperCase()}</TableCell>
+                            <TableCell>{order.customer}</TableCell>
+                            <TableCell>
+                                <Badge variant={statusDisplay.variant}>
+                                    {statusDisplay.label}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">₱{order.total.toLocaleString()}</TableCell>
+                        </TableRow>
+                    );
+                })}
             </TableBody>
         </Table>
     );
