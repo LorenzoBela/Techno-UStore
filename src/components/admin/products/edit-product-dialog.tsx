@@ -175,16 +175,6 @@ export function EditProductDialog({
                                                 }}
                                                 className="col-span-1"
                                             />
-                                                onChange={(e) => {
-                                                    const newVariants = [...(formData.variants || [])];
-                                                    newVariants[index].size = e.target.value;
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        variants: newVariants,
-                                                    }));
-                                                }}
-                                                className="col-span-2"
-                                            />
                                             <Input
                                                 placeholder="Color"
                                                 value={variant.color || ""}
