@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id // This will be the Supabase Auth user ID (UUID)
   email     String   @unique
-  password  String
   name      String?
+  phone     String?
   role      String   @default("user") // "admin" or "user"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -58,11 +58,30 @@ model Order {
   user          User?       @relation(fields: [userId], references: [id])
   customerName  String
   customerEmail String
+  customerPhone String
   totalAmount   Decimal
-  status        String      @default("pending") // pending, processing, completed, cancelled
+  status        String      @default("pending") // pending, awaiting_payment, ready_for_pickup, completed, cancelled
   items         OrderItem[]
+  payment       Payment?
+  notes         String?     // Customer notes or special instructions
+  pickedUpAt    DateTime?   // When customer actually picked up
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount          Decimal
+  referenceNumber String?   // GCash reference number from the receipt
+  proofImageUrl   String    // URL to the uploaded GCash proof of payment screenshot
+  status          String    @default("pending") // pending, verified, rejected
+  rejectionReason String?   // Reason if payment is rejected
+  verifiedBy      String?   // Admin user ID who verified
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model OrderItem {

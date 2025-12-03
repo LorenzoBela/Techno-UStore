@@ -6,8 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
+
 export default function LoginPage() {
     const router = useRouter();
+    const { signIn, signInWithGoogle } = useAuth();
     const [isLoading, setIsLoading] = React.useState(false);
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -18,18 +21,31 @@ export default function LoginPage() {
         const email = formData.get("email") as string;
         const password = formData.get("password") as string;
 
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
+        // Check for admin login
         if (email === "admin@technoustore.com" && password === "admin123") {
-            // Set admin session cookie (in a real app, this should be an HTTP-only cookie from the server)
             document.cookie = "admin_session=true; path=/";
             toast.success("Welcome back, Admin!");
             router.push("/admin");
+            return;
+        }
+
+        // Use Supabase auth
+        const { error } = await signIn(email, password);
+        
+        if (error) {
+            toast.error(error.message || "Invalid credentials");
+            setIsLoading(false);
         } else {
-            // For now, just show an error or proceed with normal user login simulation
-            // Since Auth0 is not fully hooked up for this custom form yet
-            toast.error("Invalid credentials");
+            toast.success("Welcome back!");
+            router.push("/");
+        }
+    }
+
+    async function handleGoogleSignIn() {
+        setIsLoading(true);
+        const { error } = await signInWithGoogle();
+        if (error) {
+            toast.error(error.message || "Failed to sign in with Google");
             setIsLoading(false);
         }
     }
@@ -90,20 +106,12 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Button variant="outline" type="button">
-                            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                                <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                            </svg>
-                            Google
-                        </Button>
-                        <Button variant="outline" type="button">
-                            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="microsoft" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                                <path fill="currentColor" d="M0 32h214.6v214.6H0V32zm233.4 0H448v214.6H233.4V32zM0 265.4h214.6V480H0V265.4zm233.4 0H448V480H233.4V265.4z"></path>
-                            </svg>
-                            Microsoft
-                        </Button>
-                    </div>
+                    <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isLoading}>
+                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                            <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                        </svg>
+                        Google
+                    </Button>
                 </div>
 
                 <p className="px-8 text-center text-sm text-muted-foreground">
