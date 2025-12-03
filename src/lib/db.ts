@@ -36,12 +36,31 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
     const dbEnv = process.env.DB_ENV || getEnvironment();
-    console.log(`🗄️  Database: Connecting to ${dbEnv.toUpperCase()} environment`);
-
     const connectionString = getDatabaseUrl();
     
-    // Create a connection pool
-    const pool = new Pool({ connectionString });
+    // Log connection info (without exposing the full connection string)
+    if (!connectionString) {
+        console.error("❌ DATABASE ERROR: No database connection string found!");
+        console.error("   Available env vars:", {
+            hasDATABASE_URL: !!process.env.DATABASE_URL,
+            hasPROD_DATABASE_URL: !!process.env.PROD_DATABASE_URL,
+            hasDEV_DATABASE_URL: !!process.env.DEV_DATABASE_URL,
+            DB_ENV: process.env.DB_ENV,
+            NODE_ENV: process.env.NODE_ENV,
+        });
+    } else {
+        console.log(`🗄️  Database: Connecting to ${dbEnv.toUpperCase()} environment`);
+    }
+    
+    // Create a connection pool with SSL for production (required by Supabase)
+    const isProduction = process.env.NODE_ENV === "production";
+    const pool = new Pool({ 
+        connectionString,
+        ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+        max: 10, // Maximum connections in pool
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+    });
     globalForPrisma.pool = pool;
     
     // Create the Prisma adapter
