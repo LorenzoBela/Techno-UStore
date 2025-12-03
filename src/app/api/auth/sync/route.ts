@@ -72,6 +72,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ user: dbUser });
     } catch (error) {
         console.error("Error syncing user:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        // Return more details in development
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ 
+            error: "Internal server error",
+            details: process.env.NODE_ENV === "development" ? errorMessage : undefined 
+        }, { status: 500 });
     }
 }
