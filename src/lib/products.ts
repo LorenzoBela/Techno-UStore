@@ -42,22 +42,27 @@ function transformProduct(dbProduct: {
 
 // Fetch products by category slug
 export async function getProductsByCategory(categorySlug: string, limit?: number): Promise<Product[]> {
-    const products = await prisma.product.findMany({
-        where: {
-            category: {
-                slug: categorySlug.toLowerCase(),
+    try {
+        const products = await prisma.product.findMany({
+            where: {
+                category: {
+                    slug: categorySlug.toLowerCase(),
+                },
             },
-        },
-        include: {
-            category: true,
-            images: true,
-            variants: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-    });
+            include: {
+                category: true,
+                images: true,
+                variants: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
 
-    return products.map(transformProduct);
+        return products.map(transformProduct);
+    } catch (error) {
+        console.error("Error fetching products by category:", error);
+        return [];
+    }
 }
 
 // Fetch top products for each category (for home page)
@@ -67,47 +72,62 @@ export async function getTopProductsByCategory(categorySlug: string, limit: numb
 
 // Fetch all products
 export async function getAllProducts(): Promise<Product[]> {
-    const products = await prisma.product.findMany({
-        include: {
-            category: true,
-            images: true,
-            variants: true,
-        },
-        orderBy: { createdAt: "desc" },
-    });
+    try {
+        const products = await prisma.product.findMany({
+            include: {
+                category: true,
+                images: true,
+                variants: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
 
-    return products.map(transformProduct);
+        return products.map(transformProduct);
+    } catch (error) {
+        console.error("Error fetching all products:", error);
+        return [];
+    }
 }
 
 // Fetch a single product by ID
 export async function getProductById(id: string): Promise<Product | null> {
-    const product = await prisma.product.findUnique({
-        where: { id },
-        include: {
-            category: true,
-            images: true,
-            variants: true,
-        },
-    });
+    try {
+        const product = await prisma.product.findUnique({
+            where: { id },
+            include: {
+                category: true,
+                images: true,
+                variants: true,
+            },
+        });
 
-    if (!product) return null;
-    return transformProduct(product);
+        if (!product) return null;
+        return transformProduct(product);
+    } catch (error) {
+        console.error("Error fetching product by ID:", error);
+        return null;
+    }
 }
 
 // Fetch all categories
 export async function getAllCategories(): Promise<{ name: string; slug: string; count: number }[]> {
-    const categories = await prisma.category.findMany({
-        include: {
-            _count: {
-                select: { products: true },
+    try {
+        const categories = await prisma.category.findMany({
+            include: {
+                _count: {
+                    select: { products: true },
+                },
             },
-        },
-        orderBy: { name: "asc" },
-    });
+            orderBy: { name: "asc" },
+        });
 
-    return categories.map(cat => ({
-        name: cat.name,
-        slug: cat.slug,
-        count: cat._count.products,
-    }));
+        return categories.map(cat => ({
+            name: cat.name,
+            slug: cat.slug,
+            count: cat._count.products,
+        }));
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        return [];
+    }
 }

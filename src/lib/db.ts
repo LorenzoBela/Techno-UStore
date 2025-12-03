@@ -15,15 +15,17 @@ function getEnvironment(): Environment {
 
 // Get the correct DATABASE_URL based on environment
 function getDatabaseUrl(): string {
-    const env = getEnvironment();
-    const dbEnv = process.env.DB_ENV || env;
-
+    // Check for explicit environment override
+    const dbEnv = process.env.DB_ENV;
+    
     if (dbEnv === "production" && process.env.PROD_DATABASE_URL) {
         return process.env.PROD_DATABASE_URL;
-    } else if (process.env.DEV_DATABASE_URL) {
+    } else if (dbEnv === "development" && process.env.DEV_DATABASE_URL) {
         return process.env.DEV_DATABASE_URL;
     }
-    return process.env.DATABASE_URL || "";
+    
+    // Fallback: Use DATABASE_URL directly (most common for Vercel)
+    return process.env.DATABASE_URL || process.env.PROD_DATABASE_URL || process.env.DEV_DATABASE_URL || "";
 }
 
 // Prisma client singleton pattern for Next.js

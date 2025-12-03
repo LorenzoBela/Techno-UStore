@@ -8,13 +8,22 @@ import { getTopProductsByCategory } from "@/lib/products";
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  // Fetch products from database
-  const [topApparel, topAccessories, topSupplies, topUniforms] = await Promise.all([
-    getTopProductsByCategory("apparel", 4),
-    getTopProductsByCategory("accessories", 4),
-    getTopProductsByCategory("supplies", 4),
-    getTopProductsByCategory("uniforms", 4),
-  ]);
+  // Fetch products from database with fallback to empty arrays
+  let topApparel: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
+  let topAccessories: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
+  let topSupplies: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
+  let topUniforms: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
+
+  try {
+    [topApparel, topAccessories, topSupplies, topUniforms] = await Promise.all([
+      getTopProductsByCategory("apparel", 4),
+      getTopProductsByCategory("accessories", 4),
+      getTopProductsByCategory("supplies", 4),
+      getTopProductsByCategory("uniforms", 4),
+    ]);
+  } catch (error) {
+    console.error("Error fetching products for home page:", error);
+  }
 
   return (
     <main className="flex min-h-screen flex-col">
