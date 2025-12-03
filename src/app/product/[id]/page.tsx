@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { getProductById } from "@/lib/products";
 import { ProductDetailClient } from "@/components/product/ProductDetailClient";
 
+// Force dynamic rendering to prevent prerender errors with database
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({
     params,
 }: {

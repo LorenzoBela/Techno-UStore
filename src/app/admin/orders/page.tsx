@@ -12,6 +12,9 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import { getAdminOrders } from "./order-actions";
 
+// Force dynamic rendering to prevent prerender errors
+export const dynamic = 'force-dynamic';
+
 function getStatusDisplay(status: string) {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
         pending: { label: "Pending", variant: "outline" },

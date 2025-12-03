@@ -12,6 +12,9 @@ import {
     getTopProducts,
 } from "./dashboard-actions";
 
+// Force dynamic rendering to prevent prerender errors
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboardPage() {
     const [stats, monthlyRevenue, recentOrders, recentSales, topProducts] = await Promise.all([
         getDashboardStats(),

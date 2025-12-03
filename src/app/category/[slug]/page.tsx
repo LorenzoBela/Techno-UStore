@@ -2,6 +2,9 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategorySidebar } from "@/components/product/CategorySidebar";
 import { getProductsByCategory, getAllCategories } from "@/lib/products";
 
+// Force dynamic rendering to prevent prerender errors with database
+export const dynamic = 'force-dynamic';
+
 export default async function CategoryPage({
     params,
 }: {

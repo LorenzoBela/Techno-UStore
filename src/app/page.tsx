@@ -4,6 +4,9 @@ import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
 import { getTopProductsByCategory } from "@/lib/products";
 
+// Force dynamic rendering to prevent prerender errors with database
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Fetch products from database
   const [topApparel, topAccessories, topSupplies, topUniforms] = await Promise.all([

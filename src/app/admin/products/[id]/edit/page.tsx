@@ -2,6 +2,9 @@ import { ProductForm } from "@/components/admin/products/ProductForm";
 import { getProduct } from "../../product-actions";
 import { notFound } from "next/navigation";
 
+// Force dynamic rendering to prevent prerender errors with database
+export const dynamic = 'force-dynamic';
+
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const product = await getProduct(id);
