@@ -15,68 +15,96 @@ export async function POST(request: NextRequest) {
         const token = authHeader.split(" ")[1];
 
         // Verify the token with Supabase
-        const supabase = getSupabaseAdmin();
+        let supabase;
+        try {
+            supabase = getSupabaseAdmin();
+        } catch (error) {
+            console.error("Supabase admin client error:", error);
+            return NextResponse.json({ 
+                error: "Supabase configuration error",
+                details: error instanceof Error ? error.message : "Unknown error"
+            }, { status: 500 });
+        }
+
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
         if (authError || !user) {
+            console.error("Auth error:", authError);
             return NextResponse.json({ error: "Invalid token" }, { status: 401 });
         }
 
-        // First, check if a user with this email already exists (from a different auth method)
-        const existingUserByEmail = await prisma.user.findUnique({
-            where: { email: user.email! },
-        });
-
+        // Try database operations with error handling
         let dbUser;
-
-        if (existingUserByEmail && existingUserByEmail.id !== user.id) {
-            // User exists with different ID - update the ID to match Supabase Auth
-            // This handles cases where user signed up with email/password, then uses Google OAuth
-            await prisma.user.delete({ where: { id: existingUserByEmail.id } });
-            dbUser = await prisma.user.create({
-                data: {
-                    id: user.id,
-                    email: user.email!,
-                    name: user.user_metadata?.name || user.user_metadata?.full_name || existingUserByEmail.name,
-                    phone: user.user_metadata?.phone || user.phone || existingUserByEmail.phone,
-                    role: existingUserByEmail.role, // Preserve existing role
-                },
+        try {
+            // First, check if a user with this email already exists (from a different auth method)
+            const existingUserByEmail = await prisma.user.findUnique({
+                where: { email: user.email! },
             });
-        } else {
-            // Normal upsert - either new user or same ID
-            dbUser = await prisma.user.upsert({
-                where: { id: user.id },
-                update: {
-                    email: user.email!,
-                    name: user.user_metadata?.name || user.user_metadata?.full_name,
-                    phone: user.user_metadata?.phone || user.phone,
-                    updatedAt: new Date(),
-                },
-                create: {
+
+            if (existingUserByEmail && existingUserByEmail.id !== user.id) {
+                // User exists with different ID - update the ID to match Supabase Auth
+                await prisma.user.delete({ where: { id: existingUserByEmail.id } });
+                dbUser = await prisma.user.create({
+                    data: {
+                        id: user.id,
+                        email: user.email!,
+                        name: user.user_metadata?.name || user.user_metadata?.full_name || existingUserByEmail.name,
+                        phone: user.user_metadata?.phone || user.phone || existingUserByEmail.phone,
+                        role: existingUserByEmail.role,
+                    },
+                });
+            } else {
+                // Normal upsert - either new user or same ID
+                dbUser = await prisma.user.upsert({
+                    where: { id: user.id },
+                    update: {
+                        email: user.email!,
+                        name: user.user_metadata?.name || user.user_metadata?.full_name,
+                        phone: user.user_metadata?.phone || user.phone,
+                        updatedAt: new Date(),
+                    },
+                    create: {
+                        id: user.id,
+                        email: user.email!,
+                        name: user.user_metadata?.name || user.user_metadata?.full_name,
+                        phone: user.user_metadata?.phone || user.phone,
+                        role: "user",
+                    },
+                });
+            }
+        } catch (dbError) {
+            console.error("Database error during sync:", dbError);
+            // Return user info from Supabase even if DB fails
+            return NextResponse.json({ 
+                user: {
                     id: user.id,
-                    email: user.email!,
+                    email: user.email,
                     name: user.user_metadata?.name || user.user_metadata?.full_name,
-                    phone: user.user_metadata?.phone || user.phone,
-                    role: "user",
+                    role: user.user_metadata?.role || "user",
                 },
+                warning: "Database sync failed, using auth data only"
             });
         }
 
         // Sync role back to Supabase metadata so we can use it in the client
-        if (dbUser.role) {
-            await supabase.auth.admin.updateUserById(user.id, {
-                user_metadata: { role: dbUser.role }
-            });
+        try {
+            if (dbUser.role) {
+                await supabase.auth.admin.updateUserById(user.id, {
+                    user_metadata: { role: dbUser.role }
+                });
+            }
+        } catch (metadataError) {
+            console.error("Failed to sync role to Supabase:", metadataError);
+            // Non-critical, continue
         }
 
         return NextResponse.json({ user: dbUser });
     } catch (error) {
         console.error("Error syncing user:", error);
-        // Return more details in development
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return NextResponse.json({ 
             error: "Internal server error",
-            details: process.env.NODE_ENV === "development" ? errorMessage : undefined 
+            details: errorMessage
         }, { status: 500 });
     }
 }
