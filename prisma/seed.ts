@@ -82,12 +82,14 @@ async function main() {
                 price: 850,
                 stock: 50,
                 categoryId: apparel.id,
-                variants: JSON.stringify([
-                    { size: "S", stock: 10 },
-                    { size: "M", stock: 20 },
-                    { size: "L", stock: 15 },
-                    { size: "XL", stock: 5 },
-                ]),
+                variants: {
+                    create: [
+                        { size: "S", stock: 10 },
+                        { size: "M", stock: 20 },
+                        { size: "L", stock: 15 },
+                        { size: "XL", stock: 5 },
+                    ],
+                },
             },
         }),
         prisma.product.upsert({
