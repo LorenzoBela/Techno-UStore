@@ -33,6 +33,7 @@ interface CreateProductData {
     description: string;
     price: number;
     category: string;
+    subcategory?: string;
     stock: number;
     images: string[];
     variants: { name: string; size: string; color: string; stock: number; imageUrl?: string }[];
@@ -66,7 +67,8 @@ export async function createProduct(data: CreateProductData) {
                 price: data.price,
                 stock: data.stock,
                 slug: productSlug,
-                categoryId: category.id,
+                category: { connect: { id: category.id } },
+                subcategory: data.subcategory,
                 images: {
                     create: data.images.map((url) => ({
                         url: url,
@@ -98,6 +100,7 @@ export async function updateProduct(id: string, data: {
     price: number;
     stock: number;
     category: string;
+    subcategory?: string;
     images: string[];
     variants?: { name?: string; size: string; color?: string; stock: number; imageUrl?: string }[];
 }) {
@@ -117,7 +120,8 @@ export async function updateProduct(id: string, data: {
                 description: data.description,
                 price: data.price,
                 stock: data.stock,
-                categoryId: category.id,
+                category: { connect: { id: category.id } },
+                subcategory: data.subcategory,
             },
         });
 
@@ -204,6 +208,7 @@ export async function getProducts(page = 1, pageSize = 20, filters?: { category?
             image: p.images[0]?.url || "",
             images: p.images.map((img: any) => img.url),
             category: p.category.name,
+            subcategory: p.subcategory || undefined,
             stock: p.stock,
             variants: p.variants.map((v: any) => ({
                 name: v.name || undefined,
@@ -243,6 +248,7 @@ export async function getProduct(id: string) {
             image: product.images[0]?.url || "",
             images: product.images.map((img: any) => img.url),
             category: product.category.name,
+            subcategory: product.subcategory || undefined,
             stock: product.stock,
             variants: product.variants.map((v: any) => ({
                 name: v.name || undefined,

@@ -51,6 +51,7 @@ model Product {
   name        String
   slug        String         @unique
   description String?
+  subcategory String?
   price       Decimal
   stock       Int
   categoryId  String

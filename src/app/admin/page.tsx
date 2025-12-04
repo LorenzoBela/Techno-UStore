@@ -2,6 +2,7 @@ import { Overview } from "@/components/admin/Overview";
 import { RecentSales } from "@/components/admin/RecentSales";
 import { RecentOrdersWidget } from "@/components/admin/RecentOrdersWidget";
 import { TopProducts } from "@/components/admin/TopProducts";
+import { RecentUsersWidget } from "@/components/admin/RecentUsersWidget";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import {
@@ -10,18 +11,20 @@ import {
     getRecentOrders,
     getRecentSales,
     getTopProducts,
+    getRecentUsers,
 } from "./dashboard-actions";
 
 // Force dynamic rendering to prevent prerender errors
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
-    const [stats, monthlyRevenue, recentOrders, recentSales, topProducts] = await Promise.all([
+    const [stats, monthlyRevenue, recentOrders, recentSales, topProducts, recentUsers] = await Promise.all([
         getDashboardStats(),
         getMonthlyRevenue(),
         getRecentOrders(5),
         getRecentSales(5),
         getTopProducts(5),
+        getRecentUsers(5),
     ]);
 
     // Calculate percentage changes
@@ -114,6 +117,16 @@ export default async function AdminDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <TopProducts products={topProducts} />
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="col-span-4">
+                    <CardHeader>
+                        <CardTitle>Recent Users</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <RecentUsersWidget users={recentUsers} />
                     </CardContent>
                 </Card>
             </div>

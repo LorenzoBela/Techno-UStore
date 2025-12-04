@@ -38,6 +38,13 @@ interface Variant {
     imageUrl?: string;
 }
 
+const subcategories: Record<string, string[]> = {
+    Apparel: ["T-Shirts", "Hoodies", "Polos", "Jackets"],
+    Accessories: ["Caps", "Lanyards", "Tumblers", "Bags"],
+    Supplies: ["Notebooks", "Pens", "Art Materials"],
+    Uniforms: ["PE Uniforms", "School Uniforms", "Org Shirts"],
+};
+
 export function ProductForm({ initialData }: ProductFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +55,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [price, setPrice] = useState(initialData?.price.toString() || "");
     const [stock, setStock] = useState(initialData?.stock.toString() || "");
     const [category, setCategory] = useState(initialData?.category || "");
+    const [subcategory, setSubcategory] = useState(initialData?.subcategory || "");
 
     // Image State
     // For existing images, we store URLs. For new uploads, we store Files.
@@ -166,6 +174,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 price: parseFloat(price),
                 stock: parseInt(stock),
                 category,
+                subcategory,
                 images: finalImages,
                 variants: finalVariants,
             };
@@ -255,6 +264,23 @@ export function ProductForm({ initialData }: ProductFormProps) {
                             </SelectContent>
                         </Select>
                     </div>
+                    {category && (
+                        <div className="grid gap-2">
+                            <Label>Subcategory</Label>
+                            <Select value={subcategory} onValueChange={setSubcategory}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a subcategory" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {subcategories[category]?.map((sub) => (
+                                        <SelectItem key={sub} value={sub}>
+                                            {sub}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">
@@ -452,6 +478,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     Cancel
                 </Button>
             </div>
-        </form>
+        </form >
     );
 }

@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Store } from "lucide-react";
+import { UserNav } from "@/components/layout/UserNav";
 
 export default function AdminLayout({
     children,
@@ -62,17 +63,13 @@ export default function AdminLayout({
                         </Link>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                                document.cookie =
-                                    "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-                                router.push("/login");
-                            }}
-                        >
-                            Logout
-                        </Button>
+                        <Link href="/">
+                            <Button variant="ghost" size="sm">
+                                <Store className="mr-2 h-4 w-4" />
+                                Back to Store
+                            </Button>
+                        </Link>
+                        <UserNav />
                     </div>
                 </div>
             </header>

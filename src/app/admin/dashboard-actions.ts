@@ -181,3 +181,24 @@ export async function getTopProducts(limit = 5) {
         return [];
     }
 }
+
+// Recent users
+export async function getRecentUsers(limit = 5) {
+    try {
+        const users = await prisma.user.findMany({
+            take: limit,
+            orderBy: { createdAt: "desc" },
+        });
+
+        return users.map((user) => ({
+            id: user.id,
+            name: user.name || "Unknown User",
+            email: user.email,
+            createdAt: user.createdAt.toISOString(),
+        }));
+    } catch (error) {
+        console.error("Error fetching recent users:", error);
+        return [];
+    }
+}
+

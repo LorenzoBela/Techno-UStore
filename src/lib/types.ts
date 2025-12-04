@@ -16,6 +16,7 @@ export interface Product {
     image: string;
     images?: string[];
     category: string;
+    subcategory?: string;
     isNew?: boolean;
     stock: number;
     variants?: ProductVariant[];

@@ -7,15 +7,26 @@ export const dynamic = 'force-dynamic';
 
 export default async function CategoryPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ slug: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
     const { slug } = await params;
+    const resolvedSearchParams = await searchParams;
     const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1);
+
+    // Parse filters from searchParams
+    const filters = {
+        types: typeof resolvedSearchParams.types === 'string' ? resolvedSearchParams.types.split(',') : undefined,
+        priceRange: typeof resolvedSearchParams.priceRange === 'string' ? resolvedSearchParams.priceRange.split(',') : undefined,
+        sizes: typeof resolvedSearchParams.sizes === 'string' ? resolvedSearchParams.sizes.split(',') : undefined,
+        sort: typeof resolvedSearchParams.sort === 'string' ? resolvedSearchParams.sort : undefined,
+    };
 
     // Fetch products and categories from database
     const [products, categories] = await Promise.all([
-        getProductsByCategory(slug),
+        getProductsByCategory(slug, filters),
         getAllCategories(),
     ]);
 

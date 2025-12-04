@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useCallback } from "react";
 
 interface Category {
     name: string;
@@ -34,8 +36,53 @@ const subcategories: Record<string, string[]> = {
 };
 
 export function CategorySidebar({ currentCategory, categories }: CategorySidebarProps) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const displayCategories = categories && categories.length > 0 ? categories : defaultCategories;
     const currentSubcategories = subcategories[currentCategory.toLowerCase()] || [];
+
+    // Create Query String
+    const createQueryString = useCallback(
+        (name: string, value: string) => {
+            const params = new URLSearchParams(searchParams.toString());
+
+            // Handle multiple values for same key (comma separated)
+            const current = params.get(name);
+            let newValues = current ? current.split(',') : [];
+
+            if (newValues.includes(value)) {
+                newValues = newValues.filter(v => v !== value);
+            } else {
+                newValues.push(value);
+            }
+
+            if (newValues.length > 0) {
+                params.set(name, newValues.join(','));
+            } else {
+                params.delete(name);
+            }
+
+            return params.toString();
+        },
+        [searchParams]
+    );
+
+    // Handle single value params (like sort)
+    const setQueryParam = useCallback(
+        (name: string, value: string) => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set(name, value);
+            return params.toString();
+        },
+        [searchParams]
+    );
+
+    const isChecked = (name: string, value: string) => {
+        const current = searchParams.get(name);
+        return current ? current.split(',').includes(value) : false;
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -73,7 +120,13 @@ export function CategorySidebar({ currentCategory, categories }: CategorySidebar
                         <div className="flex flex-col gap-3">
                             {currentSubcategories.map((sub) => (
                                 <div key={sub} className="flex items-center space-x-2">
-                                    <Checkbox id={`sub-${sub}`} />
+                                    <Checkbox
+                                        id={`sub-${sub}`}
+                                        checked={isChecked('types', sub)}
+                                        onCheckedChange={() => {
+                                            router.push(pathname + '?' + createQueryString('types', sub));
+                                        }}
+                                    />
                                     <Label htmlFor={`sub-${sub}`}>{sub}</Label>
                                 </div>
                             ))}
@@ -89,15 +142,33 @@ export function CategorySidebar({ currentCategory, categories }: CategorySidebar
                 <h3 className="font-semibold text-lg">Price Range</h3>
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="price-1" />
+                        <Checkbox
+                            id="price-1"
+                            checked={isChecked('priceRange', 'under-500')}
+                            onCheckedChange={() => {
+                                router.push(pathname + '?' + createQueryString('priceRange', 'under-500'));
+                            }}
+                        />
                         <Label htmlFor="price-1">Under ₱500</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="price-2" />
+                        <Checkbox
+                            id="price-2"
+                            checked={isChecked('priceRange', '500-1000')}
+                            onCheckedChange={() => {
+                                router.push(pathname + '?' + createQueryString('priceRange', '500-1000'));
+                            }}
+                        />
                         <Label htmlFor="price-2">₱500 - ₱1000</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="price-3" />
+                        <Checkbox
+                            id="price-3"
+                            checked={isChecked('priceRange', 'above-1000')}
+                            onCheckedChange={() => {
+                                router.push(pathname + '?' + createQueryString('priceRange', 'above-1000'));
+                            }}
+                        />
                         <Label htmlFor="price-3">Above ₱1000</Label>
                     </div>
                 </div>
@@ -111,7 +182,13 @@ export function CategorySidebar({ currentCategory, categories }: CategorySidebar
                 <div className="flex flex-wrap gap-2">
                     {["XS", "S", "M", "L", "XL", "2XL"].map((size) => (
                         <div key={size} className="flex items-center space-x-2">
-                            <Checkbox id={`size-${size}`} />
+                            <Checkbox
+                                id={`size-${size}`}
+                                checked={isChecked('sizes', size)}
+                                onCheckedChange={() => {
+                                    router.push(pathname + '?' + createQueryString('sizes', size));
+                                }}
+                            />
                             <Label htmlFor={`size-${size}`}>{size}</Label>
                         </div>
                     ))}
@@ -124,9 +201,27 @@ export function CategorySidebar({ currentCategory, categories }: CategorySidebar
             <div className="flex flex-col gap-4">
                 <h3 className="font-semibold text-lg">Sort By</h3>
                 <div className="flex flex-col gap-2">
-                    <Button variant="outline" className="justify-start">Newest Arrivals</Button>
-                    <Button variant="ghost" className="justify-start">Price: Low to High</Button>
-                    <Button variant="ghost" className="justify-start">Price: High to Low</Button>
+                    <Button
+                        variant={searchParams.get('sort') === 'newest' || !searchParams.get('sort') ? "secondary" : "ghost"}
+                        className="justify-start"
+                        onClick={() => router.push(pathname + '?' + setQueryParam('sort', 'newest'))}
+                    >
+                        Newest Arrivals
+                    </Button>
+                    <Button
+                        variant={searchParams.get('sort') === 'price-asc' ? "secondary" : "ghost"}
+                        className="justify-start"
+                        onClick={() => router.push(pathname + '?' + setQueryParam('sort', 'price-asc'))}
+                    >
+                        Price: Low to High
+                    </Button>
+                    <Button
+                        variant={searchParams.get('sort') === 'price-desc' ? "secondary" : "ghost"}
+                        className="justify-start"
+                        onClick={() => router.push(pathname + '?' + setQueryParam('sort', 'price-desc'))}
+                    >
+                        Price: High to Low
+                    </Button>
                 </div>
             </div>
         </div>

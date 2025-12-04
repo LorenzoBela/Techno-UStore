@@ -19,7 +19,7 @@ function transformProduct(dbProduct: {
     const now = new Date();
     const createdAt = new Date(dbProduct.createdAt);
     const daysDiff = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     return {
         id: dbProduct.id,
         name: dbProduct.name,
@@ -40,21 +40,69 @@ function transformProduct(dbProduct: {
     };
 }
 
-// Fetch products by category slug
-export async function getProductsByCategory(categorySlug: string, limit?: number): Promise<Product[]> {
+// Fetch products by category slug with filters
+export async function getProductsByCategory(
+    categorySlug: string,
+    filters?: {
+        types?: string[];
+        priceRange?: string[];
+        sizes?: string[];
+        sort?: string;
+    },
+    limit?: number
+): Promise<Product[]> {
     try {
-        const products = await prisma.product.findMany({
-            where: {
-                category: {
-                    slug: categorySlug.toLowerCase(),
-                },
+        const where: any = {
+            category: {
+                slug: categorySlug.toLowerCase(),
             },
+        };
+
+        // Filter by Subcategory (Type)
+        if (filters?.types && filters.types.length > 0) {
+            where.subcategory = { in: filters.types };
+        }
+
+        // Filter by Size
+        if (filters?.sizes && filters.sizes.length > 0) {
+            where.variants = {
+                some: {
+                    size: { in: filters.sizes }
+                }
+            };
+        }
+
+        // Filter by Price Range
+        if (filters?.priceRange && filters.priceRange.length > 0) {
+            const priceConditions = filters.priceRange.map(range => {
+                if (range === 'under-500') return { price: { lt: 500 } };
+                if (range === '500-1000') return { price: { gte: 500, lte: 1000 } };
+                if (range === 'above-1000') return { price: { gt: 1000 } };
+                return {};
+            });
+
+            if (priceConditions.length > 0) {
+                where.AND = [
+                    ...(where.AND || []),
+                    { OR: priceConditions }
+                ];
+            }
+        }
+
+        // Determine Sort Order
+        let orderBy: any = { createdAt: "desc" };
+        if (filters?.sort === 'price-asc') orderBy = { price: "asc" };
+        if (filters?.sort === 'price-desc') orderBy = { price: "desc" };
+        if (filters?.sort === 'newest') orderBy = { createdAt: "desc" };
+
+        const products = await prisma.product.findMany({
+            where,
             include: {
                 category: true,
                 images: true,
                 variants: true,
             },
-            orderBy: { createdAt: "desc" },
+            orderBy,
             take: limit,
         });
 
@@ -67,7 +115,7 @@ export async function getProductsByCategory(categorySlug: string, limit?: number
 
 // Fetch top products for each category (for home page)
 export async function getTopProductsByCategory(categorySlug: string, limit: number = 4): Promise<Product[]> {
-    return getProductsByCategory(categorySlug, limit);
+    return getProductsByCategory(categorySlug, undefined, limit);
 }
 
 // Fetch all products
