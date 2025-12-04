@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 export default function AdminLayout({
     children,
@@ -43,6 +45,18 @@ export default function AdminLayout({
             <header className="sticky top-0 z-40 border-b bg-background">
                 <div className="container flex h-16 items-center justify-between py-4">
                     <div className="flex gap-6 md:gap-10">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden">
+                                    <Menu className="h-6 w-6" />
+                                    <span className="sr-only">Toggle Menu</span>
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="pr-0">
+                                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                                <Sidebar />
+                            </SheetContent>
+                        </Sheet>
                         <Link href="/admin" className="flex items-center space-x-2">
                             <span className="font-bold inline-block">Admin Dashboard</span>
                         </Link>

@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MainNav } from "./MainNav";
 import { MobileNav } from "./MobileNav";
 import { UserNav } from "./UserNav";
@@ -16,6 +17,11 @@ import { SearchBar } from "@/components/ui/search-bar";
 export function Header() {
     const { cartCount } = useCart();
     const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+    const pathname = usePathname();
+
+    if (pathname?.startsWith("/admin")) {
+        return null;
+    }
 
     if (isSearchOpen) {
         return (
