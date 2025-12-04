@@ -14,6 +14,7 @@ function transformProduct(dbProduct: {
     stock: number;
     createdAt: Date;
     category: { name: string };
+    subcategory: string | null;
     images: { url: string }[];
     variants: { name: string | null; size: string; color: string | null; stock: number; imageUrl: string | null }[];
 }): Product {
@@ -29,6 +30,7 @@ function transformProduct(dbProduct: {
         image: dbProduct.images[0]?.url || "",
         images: dbProduct.images.map(img => img.url),
         category: dbProduct.category.name,
+        subcategory: dbProduct.subcategory || undefined,
         isNew: daysDiff <= 7, // Products created within 7 days are "new"
         stock: dbProduct.stock,
         variants: dbProduct.variants.map(v => ({
@@ -137,7 +139,7 @@ export async function getAllProducts(options?: {
     try {
         const page = options?.page || 1;
         const limit = options?.limit;
-        
+
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 include: {

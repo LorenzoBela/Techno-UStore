@@ -23,15 +23,15 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     // Get all images including variant images
     const allImages = product.images || [product.image].filter(Boolean);
-    
+
     // Determine which image to show - manual selection overrides variant image
-    const displayImage = manualImageSelection 
+    const displayImage = manualImageSelection
         ? (allImages[currentImageIndex] || product.image)
         : (selectedVariant?.imageUrl || allImages[currentImageIndex] || product.image);
 
     // Calculate stock
-    const inStock = selectedVariant 
-        ? selectedVariant.stock > 0 
+    const inStock = selectedVariant
+        ? selectedVariant.stock > 0
         : (product.stock > 0 || (product.variants?.some((v) => v.stock > 0) ?? false));
 
     const currentStock = selectedVariant?.stock ?? product.stock;
@@ -53,7 +53,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     const groupKeys = Object.keys(variantGroups);
     const hasMultipleGroups = groupKeys.length > 1;
-    
+
     // Get current group based on selected variant
     const selectedGroupKey = selectedVariant?.name || selectedVariant?.color || "default";
     const [activeGroup, setActiveGroup] = useState(selectedGroupKey);
@@ -108,16 +108,20 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             return;
         }
 
-        const variantInfo = selectedVariant 
+        const variantInfo = selectedVariant
             ? ` - ${selectedVariant.name || `${selectedVariant.size}${selectedVariant.color ? ` / ${selectedVariant.color}` : ''}`}`
             : '';
 
         addItem({
             id: `${product.id}${selectedVariant ? `-${selectedVariant.size}-${selectedVariant.color || ''}` : ''}`,
-            name: `${product.name}${variantInfo}`,
+            name: product.name,
             price: product.price,
             image: displayImage,
             quantity: 1,
+            size: selectedVariant?.size,
+            color: selectedVariant?.color || selectedVariant?.name,
+            category: product.category,
+            subcategory: product.subcategory,
         });
 
         toast.success("Added to cart", {
@@ -144,7 +148,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <span className="text-2xl font-semibold">No Image Available</span>
                             </div>
                         )}
-                        
+
                         {/* Navigation Arrows */}
                         {allImages.length > 1 && (
                             <>
@@ -175,11 +179,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <button
                                     key={index}
                                     onClick={() => handleThumbnailClick(index)}
-                                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition-all ${
-                                        currentImageIndex === index && (manualImageSelection || !selectedVariant?.imageUrl)
-                                            ? "border-primary"
-                                            : "border-transparent hover:border-muted-foreground/50"
-                                    }`}
+                                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition-all ${currentImageIndex === index && (manualImageSelection || !selectedVariant?.imageUrl)
+                                        ? "border-primary"
+                                        : "border-transparent hover:border-muted-foreground/50"
+                                        }`}
                                 >
                                     <Image
                                         src={img}
@@ -260,9 +263,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {(() => {
                                 const currentGroup = variantGroups[activeGroup] || variantGroups[groupKeys[0]];
                                 const sizes = currentGroup?.sizes || product.variants || [];
-                                
+
                                 // Get unique sizes
-                                const uniqueSizes = sizes.filter((v, i, arr) => 
+                                const uniqueSizes = sizes.filter((v, i, arr) =>
                                     arr.findIndex(x => x.size === v.size) === i
                                 );
 
@@ -272,7 +275,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                             <h3 className="mb-3 text-sm font-medium">Select Size</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 {uniqueSizes.map((variant, index) => {
-                                                    const isSelected = selectedVariant?.size === variant.size && 
+                                                    const isSelected = selectedVariant?.size === variant.size &&
                                                         (selectedVariant?.name === variant.name || selectedVariant?.color === variant.color);
                                                     const isOutOfStock = variant.stock <= 0;
 
@@ -297,7 +300,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {selectedVariant && (
                                 <p className="text-sm text-muted-foreground">
-                                    Selected: {selectedVariant.name || selectedVariant.color || ''} {selectedVariant.size} 
+                                    Selected: {selectedVariant.name || selectedVariant.color || ''} {selectedVariant.size}
                                     <span className="ml-2">• Stock: {selectedVariant.stock} available</span>
                                 </p>
                             )}
@@ -306,9 +309,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                     {/* Actions */}
                     <div className="flex flex-col gap-4 sm:flex-row mt-6">
-                        <Button 
-                            size="lg" 
-                            className="flex-1 gap-2" 
+                        <Button
+                            size="lg"
+                            className="flex-1 gap-2"
                             disabled={!inStock}
                             onClick={handleAddToCart}
                         >

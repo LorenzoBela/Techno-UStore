@@ -23,41 +23,27 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { AccountTabs } from "@/components/layout/AccountTabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-// Mock data for demonstration
-const mockOrders = [
-    {
-        id: "ORD-001",
-        date: "2024-03-15",
-        total: 1200,
-        status: "Completed",
-        items: 3,
-    },
-    {
-        id: "ORD-005",
-        date: "2024-03-20",
-        total: 2500,
-        status: "Processing",
-        items: 1,
-    },
-    {
-        id: "ORD-006",
-        date: "2024-03-22",
-        total: 850,
-        status: "Pending",
-        items: 2,
-    },
-    {
-        id: "ORD-002",
-        date: "2024-02-10",
-        total: 450,
-        status: "Cancelled",
-        items: 1,
-    },
-];
+import { useEffect, useState } from "react";
+import { getUserOrders, type UserOrder } from "./order-actions";
 
 export default function OrdersPage() {
     const { user, isLoading } = useAuth();
+    const [orders, setOrders] = useState<UserOrder[]>([]);
+    const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+
+    useEffect(() => {
+        async function fetchOrders() {
+            if (user?.id) {
+                setIsLoadingOrders(true);
+                const data = await getUserOrders(user.id);
+                setOrders(data);
+                setIsLoadingOrders(false);
+            } else {
+                setIsLoadingOrders(false);
+            }
+        }
+        fetchOrders();
+    }, [user?.id]);
 
     if (isLoading) {
         return (
@@ -87,10 +73,10 @@ export default function OrdersPage() {
         .toUpperCase()
         .slice(0, 2);
 
-    const activeOrders = mockOrders.filter(
-        (order) => ["Pending", "Processing", "Shipped"].includes(order.status)
+    const activeOrders = orders.filter(
+        (order) => ["Pending", "Awaiting Payment", "Ready for Pickup"].includes(order.status)
     );
-    const historyOrders = mockOrders.filter(
+    const historyOrders = orders.filter(
         (order) => ["Completed", "Cancelled"].includes(order.status)
     );
 
@@ -105,8 +91,8 @@ export default function OrdersPage() {
                 </Avatar>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
-                    <Button variant="link" className="p-0 h-auto text-muted-foreground text-sm">
-                        View profile
+                    <Button variant="link" className="p-0 h-auto text-muted-foreground text-sm" asChild>
+                        <Link href="/profile">View profile</Link>
                     </Button>
                 </div>
             </div>
@@ -115,8 +101,8 @@ export default function OrdersPage() {
 
             <Tabs defaultValue="active" className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="active">Active Orders</TabsTrigger>
-                    <TabsTrigger value="history">Order History</TabsTrigger>
+                    <TabsTrigger value="active">Active Orders ({activeOrders.length})</TabsTrigger>
+                    <TabsTrigger value="history">Order History ({historyOrders.length})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="active" className="space-y-4">
                     <Card className="border-none shadow-sm">
@@ -127,7 +113,7 @@ export default function OrdersPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <OrderTable orders={activeOrders} />
+                            <OrderTable orders={activeOrders} isLoading={isLoadingOrders} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -140,7 +126,7 @@ export default function OrdersPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <OrderTable orders={historyOrders} />
+                            <OrderTable orders={historyOrders} isLoading={isLoadingOrders} />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -149,7 +135,7 @@ export default function OrdersPage() {
     );
 }
 
-const OrderTable = ({ orders }: { orders: typeof mockOrders }) => (
+const OrderTable = ({ orders, isLoading }: { orders: UserOrder[]; isLoading: boolean }) => (
     <Table>
         <TableHeader>
             <TableRow>
@@ -162,28 +148,37 @@ const OrderTable = ({ orders }: { orders: typeof mockOrders }) => (
             </TableRow>
         </TableHeader>
         <TableBody>
-            {orders.length > 0 ? (
+            {isLoading ? (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                </TableRow>
+            ) : orders.length > 0 ? (
                 orders.map((order) => (
                     <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell className="font-medium font-mono text-xs">
+                            {order.id.substring(0, 8)}...
+                        </TableCell>
                         <TableCell>{order.date}</TableCell>
-                        <TableCell>{order.items} items</TableCell>
+                        <TableCell>{order.items} {order.items === 1 ? "item" : "items"}</TableCell>
                         <TableCell>
                             <Badge
                                 variant={
                                     order.status === "Completed"
                                         ? "default"
-                                        : order.status === "Processing"
-                                            ? "secondary"
-                                            : order.status === "Cancelled"
-                                                ? "destructive"
-                                                : "outline"
+                                        : order.status === "Cancelled"
+                                            ? "destructive"
+                                            : order.status === "Ready for Pickup"
+                                                ? "default"
+                                                : "secondary"
                                 }
+                                className={order.status === "Ready for Pickup" ? "bg-green-600 hover:bg-green-700" : ""}
                             >
                                 {order.status}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right">₱{order.total}</TableCell>
+                        <TableCell className="text-right">₱{order.total.toLocaleString()}</TableCell>
                         <TableCell className="text-right">
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/orders/${order.id}`}>

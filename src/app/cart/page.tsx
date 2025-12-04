@@ -11,8 +11,7 @@ export default function CartPage() {
     const { items, removeItem, updateQuantity } = useCart();
 
     const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
-    const shipping = 50; // Fixed shipping for now
-    const total = subtotal + shipping;
+    const total = subtotal;
 
     if (items.length === 0) {
         return (
@@ -53,7 +52,16 @@ export default function CartPage() {
                                             <div className="flex justify-between">
                                                 <div>
                                                     <h3 className="font-semibold">{item.name}</h3>
-                                                    {item.size && <p className="text-sm text-muted-foreground">Size: {item.size}</p>}
+                                                    <div className="text-sm text-muted-foreground flex flex-col gap-1 mt-1">
+                                                        {item.category && (
+                                                            <span>
+                                                                Category: {item.category}
+                                                                {item.subcategory && ` / ${item.subcategory}`}
+                                                            </span>
+                                                        )}
+                                                        {item.size && <span>Size: {item.size}</span>}
+                                                        {item.color && <span>Color: {item.color}</span>}
+                                                    </div>
                                                 </div>
                                                 <p className="font-semibold">₱{(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
@@ -104,16 +112,14 @@ export default function CartPage() {
                                     <span className="text-muted-foreground">Subtotal</span>
                                     <span>₱{subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Shipping</span>
-                                    <span>₱{shipping.toFixed(2)}</span>
-                                </div>
                                 <Separator />
                                 <div className="flex justify-between font-semibold">
                                     <span>Total</span>
                                     <span>₱{total.toFixed(2)}</span>
                                 </div>
-                                <Button className="w-full mt-4">Proceed to Checkout</Button>
+                                <Link href="/checkout">
+                                    <Button className="w-full mt-4">Proceed to Checkout</Button>
+                                </Link>
                             </div>
                         </div>
                     </div>

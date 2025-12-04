@@ -39,6 +39,7 @@ interface ProductCardProps {
     image: string;
     images?: string[];
     category: string;
+    subcategory?: string;
     isNew?: boolean;
     stock?: number;
     description?: string;
@@ -52,6 +53,7 @@ export function ProductCard({
     image,
     images,
     category,
+    subcategory,
     isNew,
     stock = 0,
     description,
@@ -105,6 +107,8 @@ export function ProductCard({
             price,
             image,
             quantity: 1,
+            category,
+            subcategory,
         });
         // Feedback
         toast.success("Added to cart", {
@@ -115,7 +119,7 @@ export function ProductCard({
     // List view layout
     if (viewMode === "list") {
         return (
-            <Card 
+            <Card
                 className="group overflow-hidden rounded-lg transition-all hover:shadow-lg"
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
@@ -153,11 +157,10 @@ export function ProductCard({
                                 {allImages.map((_, index) => (
                                     <div
                                         key={index}
-                                        className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                                            index === currentImageIndex 
-                                                ? "bg-white shadow-md" 
-                                                : "bg-white/50"
-                                        }`}
+                                        className={`h-1.5 w-1.5 rounded-full transition-colors ${index === currentImageIndex
+                                            ? "bg-white shadow-md"
+                                            : "bg-white/50"
+                                            }`}
                                     />
                                 ))}
                             </div>
@@ -205,7 +208,7 @@ export function ProductCard({
 
     // Grid view layout (default)
     return (
-        <Card 
+        <Card
             className="group overflow-hidden rounded-lg border-0 bg-transparent shadow-none transition-all hover:shadow-md"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
@@ -222,11 +225,10 @@ export function ProductCard({
                             {allImages.map((_, index) => (
                                 <div
                                     key={index}
-                                    className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                                        index === currentImageIndex 
-                                            ? "bg-white shadow-md" 
-                                            : "bg-white/50"
-                                    }`}
+                                    className={`h-1.5 w-1.5 rounded-full transition-colors ${index === currentImageIndex
+                                        ? "bg-white shadow-md"
+                                        : "bg-white/50"
+                                        }`}
                                 />
                             ))}
                         </div>
