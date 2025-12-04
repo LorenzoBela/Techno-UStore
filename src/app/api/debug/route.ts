@@ -1,98 +1,87 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import dns from 'dns';
+import { promisify } from 'util';
+
+const lookup = promisify(dns.lookup);
 
 // Debug endpoint to check database connection and data
 // DELETE THIS FILE AFTER DEBUGGING
 export async function GET() {
+    const debugInfo: any = {
+        steps: [],
+        env: {
+            nodeEnv: process.env.NODE_ENV,
+            hasDbUrl: !!process.env.DATABASE_URL,
+        }
+    };
+
     try {
-        // Parse DATABASE_URL to return safe details
+        // 1. Parse DATABASE_URL
+        debugInfo.steps.push("Parsing DATABASE_URL");
         const dbUrl = process.env.DATABASE_URL;
-        let dbConfig = {};
+        let host = "";
+        
         if (dbUrl) {
             try {
                 const url = new URL(dbUrl);
-                dbConfig = {
+                host = url.hostname;
+                debugInfo.dbConfig = {
                     host: url.hostname,
                     port: url.port,
                     user: url.username,
                     database: url.pathname.replace('/', ''),
                     protocol: url.protocol,
-                    // Do not return password!
+                    params: Object.fromEntries(url.searchParams),
                 };
             } catch (e) {
-                dbConfig = { error: "Could not parse DATABASE_URL" };
+                debugInfo.dbConfig = { error: "Could not parse DATABASE_URL" };
+            }
+        } else {
+            debugInfo.steps.push("❌ DATABASE_URL is missing");
+        }
+
+        // 2. DNS Lookup
+        if (host) {
+            debugInfo.steps.push(`Performing DNS lookup for ${host}`);
+            try {
+                const address = await lookup(host);
+                debugInfo.dns = address;
+                debugInfo.steps.push("✅ DNS lookup successful");
+            } catch (e: any) {
+                debugInfo.dns = { error: e.message, code: e.code };
+                debugInfo.steps.push("❌ DNS lookup failed");
             }
         }
 
-        // Test database connection
+        // 3. Test Prisma Connection
+        debugInfo.steps.push("Testing Prisma connection...");
+        
+        // Try a simple query first
+        const userCount = await prisma.user.count();
+        debugInfo.counts = { users: userCount };
+        debugInfo.steps.push("✅ Prisma connection successful");
+
+        // Get more data if successful
         const productCount = await prisma.product.count();
         const categoryCount = await prisma.category.count();
-        const userCount = await prisma.user.count();
         
-        // Get sample products
-        const products = await prisma.product.findMany({
-            take: 3,
-            include: {
-                category: true,
-                images: true,
-            },
-        });
-
-        // Get categories
-        const categories = await prisma.category.findMany();
+        debugInfo.counts.products = productCount;
+        debugInfo.counts.categories = categoryCount;
 
         return NextResponse.json({
             status: "connected",
-            dbConfig,
-            counts: {
-                products: productCount,
-                categories: categoryCount,
-                users: userCount,
-            },
-            sampleProducts: products.map(p => ({
-                id: p.id,
-                name: p.name,
-                category: p.category.name,
-                imageCount: p.images.length,
-            })),
-            categories: categories.map(c => ({
-                name: c.name,
-                slug: c.slug,
-            })),
-            env: {
-                hasDbUrl: !!process.env.DATABASE_URL,
-                nodeEnv: process.env.NODE_ENV,
-            },
+            ...debugInfo
         });
+
     } catch (error: any) {
         console.error("Debug endpoint error:", error);
         
-        // Parse DATABASE_URL even in error case
-        const dbUrl = process.env.DATABASE_URL;
-        let dbConfig = {};
-        if (dbUrl) {
-            try {
-                const url = new URL(dbUrl);
-                dbConfig = {
-                    host: url.hostname,
-                    port: url.port,
-                    user: url.username,
-                    database: url.pathname.replace('/', ''),
-                    protocol: url.protocol,
-                };
-            } catch (e) {
-                dbConfig = { error: "Could not parse DATABASE_URL" };
-            }
-        }
-
         return NextResponse.json({
             status: "error",
             error: error instanceof Error ? error.message : "Unknown error",
-            dbConfig,
-            env: {
-                hasDbUrl: !!process.env.DATABASE_URL,
-                nodeEnv: process.env.NODE_ENV,
-            },
+            stack: error instanceof Error ? error.stack : undefined,
+            ...debugInfo
         }, { status: 500 });
     }
 }

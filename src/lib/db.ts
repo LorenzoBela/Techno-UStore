@@ -20,21 +20,12 @@ function createPrismaClient(): PrismaClient {
     
     console.log(`🗄️  Database: Connecting (${isProduction ? "production" : "development"})`);
 
-    // Use native Prisma Client for better compatibility
-    return new PrismaClient({
-        datasources: {
-            db: {
-                url: connectionString,
-            },
-        },
-        log: isProduction ? ["error"] : ["error", "warn"],
-    });
-
-    /*
     // Create connection pool with SSL for production
+    // We use the adapter-pg to avoid TypeScript errors with datasources in Prisma 7
+    // and to ensure stable connection pooling.
     const pool = new Pool({ 
         connectionString,
-        ssl: isProduction ? { rejectUnauthorized: false } : false,
+        ssl: { rejectUnauthorized: false }, // Required for Supabase
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
@@ -47,7 +38,6 @@ function createPrismaClient(): PrismaClient {
         adapter,
         log: isProduction ? ["error"] : ["error", "warn"],
     });
-    */
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
