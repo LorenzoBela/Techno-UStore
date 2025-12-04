@@ -4,6 +4,7 @@ import dns from 'dns';
 import { promisify } from 'util';
 
 const lookup = promisify(dns.lookup);
+const resolve4 = promisify(dns.resolve4);
 
 // Debug endpoint to check database connection and data
 // DELETE THIS FILE AFTER DEBUGGING
@@ -51,6 +52,17 @@ export async function GET() {
             } catch (e: any) {
                 debugInfo.dns = { error: e.message, code: e.code };
                 debugInfo.steps.push("❌ DNS lookup failed");
+            }
+
+            // 2b. IPv4 Specific Lookup
+            debugInfo.steps.push(`Performing IPv4 specific lookup for ${host}`);
+            try {
+                const addresses = await resolve4(host);
+                debugInfo.dnsIPv4 = addresses;
+                debugInfo.steps.push("✅ IPv4 lookup successful");
+            } catch (e: any) {
+                debugInfo.dnsIPv4 = { error: e.message, code: e.code };
+                debugInfo.steps.push("❌ IPv4 lookup failed");
             }
         }
 
