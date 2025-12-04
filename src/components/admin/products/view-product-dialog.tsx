@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import * as React from "react";
+import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -35,10 +36,12 @@ export function ViewProductDialog({
                     <div className="flex flex-col space-y-4">
                         <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
                             {product.image ? (
-                                <img
+                                <Image
                                     src={product.image}
                                     alt={product.name}
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    sizes="(max-width: 600px) 100vw, 300px"
+                                    className="object-cover"
                                 />
                             ) : (
                                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -84,8 +87,8 @@ export function ViewProductDialog({
                                             <div key={index} className="grid grid-cols-4 items-center p-2 text-sm border-b last:border-0 hover:bg-muted/30">
                                                 <div className="col-span-2 flex items-center gap-2">
                                                     {variant.imageUrl && (
-                                                        <div className="h-8 w-8 rounded border overflow-hidden shrink-0">
-                                                            <img src={variant.imageUrl} alt="" className="h-full w-full object-cover" />
+                                                        <div className="relative h-8 w-8 rounded border overflow-hidden shrink-0">
+                                                            <Image src={variant.imageUrl} alt="" fill sizes="32px" className="object-cover" />
                                                         </div>
                                                     )}
                                                     <span className="font-medium">{variant.size}</span>

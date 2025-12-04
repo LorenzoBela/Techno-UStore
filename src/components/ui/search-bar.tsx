@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface SearchProduct {
     id: string;
@@ -105,12 +106,14 @@ export function SearchBar({ className }: { className?: string }) {
                                 className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer"
                                 onClick={() => handleSelect(product.id)}
                             >
-                                <div className="mr-3 h-10 w-10 overflow-hidden rounded-md border bg-muted shrink-0">
+                                <div className="relative mr-3 h-10 w-10 overflow-hidden rounded-md border bg-muted shrink-0">
                                     {product.image ? (
-                                        <img
+                                        <Image
                                             src={product.image}
                                             alt={product.name}
-                                            className="h-full w-full object-cover"
+                                            fill
+                                            sizes="40px"
+                                            className="object-cover"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-secondary text-xs text-muted-foreground">

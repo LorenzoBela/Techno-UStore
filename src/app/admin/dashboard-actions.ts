@@ -1,10 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { unstable_cache } from "next/cache";
 
-// Dashboard stats
-export async function getDashboardStats() {
-    try {
+// Cache dashboard stats for 1 minute (admin needs relatively fresh data)
+const getCachedDashboardStats = unstable_cache(
+    async () => {
         const [
             totalRevenue,
             totalOrders,
@@ -13,18 +14,13 @@ export async function getDashboardStats() {
             thisMonthOrders,
             lastMonthOrders,
         ] = await Promise.all([
-            // Total revenue from completed orders
             prisma.order.aggregate({
                 where: { status: "completed" },
                 _sum: { totalAmount: true },
             }),
-            // Total orders count
             prisma.order.count(),
-            // Total products count
             prisma.product.count(),
-            // Total users count
             prisma.user.count(),
-            // This month's orders
             prisma.order.count({
                 where: {
                     createdAt: {
@@ -32,7 +28,6 @@ export async function getDashboardStats() {
                     },
                 },
             }),
-            // Last month's orders
             prisma.order.count({
                 where: {
                     createdAt: {
@@ -51,6 +46,15 @@ export async function getDashboardStats() {
             thisMonthOrders,
             lastMonthOrders,
         };
+    },
+    ["dashboard-stats"],
+    { revalidate: 60, tags: ["dashboard", "orders", "products"] }
+);
+
+// Dashboard stats
+export async function getDashboardStats() {
+    try {
+        return await getCachedDashboardStats();
     } catch (error) {
         console.error("Error fetching dashboard stats:", error);
         return {

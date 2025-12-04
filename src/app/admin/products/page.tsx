@@ -6,6 +6,7 @@ import { columns } from "@/components/admin/products/columns";
 import { Product } from "@/lib/types";
 import { Plus, LayoutGrid, LayoutList, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
@@ -33,10 +34,12 @@ function ProductGridItem({ product }: { product: Product }) {
             <Card className="overflow-hidden">
                 <div className="aspect-square w-full bg-muted relative">
                     {product.image ? (
-                        <img
+                        <Image
                             src={product.image}
                             alt={product.name}
-                            className="h-full w-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                            className="object-cover"
                         />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center text-muted-foreground">

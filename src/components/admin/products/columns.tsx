@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import Image from "next/image";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -46,12 +47,14 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const image = row.getValue("image") as string;
             return (
-                <div className="h-10 w-10 overflow-hidden rounded-md bg-muted">
+                <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
                     {image ? (
-                        <img
+                        <Image
                             src={image}
                             alt={row.getValue("name")}
-                            className="h-full w-full object-cover"
+                            fill
+                            sizes="40px"
+                            className="object-cover"
                         />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
