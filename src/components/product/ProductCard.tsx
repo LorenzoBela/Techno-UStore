@@ -7,8 +7,30 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/cart-context";
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Eye, ShoppingCart } from "lucide-react";
+
+// Low quality blur placeholder for faster initial load
+const shimmer = (w: number, h: number) => `
+<svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="g">
+      <stop stop-color="#f6f7f8" offset="20%" />
+      <stop stop-color="#edeef1" offset="50%" />
+      <stop stop-color="#f6f7f8" offset="70%" />
+    </linearGradient>
+  </defs>
+  <rect width="${w}" height="${h}" fill="#f6f7f8" />
+  <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
+  <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
+</svg>`;
+
+const toBase64 = (str: string) =>
+    typeof window === "undefined"
+        ? Buffer.from(str).toString("base64")
+        : window.btoa(str);
+
+const blurDataURL = `data:image/svg+xml;base64,${toBase64(shimmer(300, 300))}`;
 
 interface ProductCardProps {
     id: string;
@@ -100,19 +122,26 @@ export function ProductCard({
             >
                 <div className="flex flex-col sm:flex-row">
                     <div className="relative aspect-square w-full sm:w-48 md:w-64 overflow-hidden flex-shrink-0">
-                        <Link href={`/product/${id}`}>
-                            {allImages.map((img, index) => (
-                                <Image
-                                    key={`${id}-${index}`}
-                                    src={img}
-                                    alt={`${name} - Image ${index + 1}`}
-                                    fill
-                                    className={`object-cover transition-opacity duration-500 ${
-                                        index === currentImageIndex ? "opacity-100" : "opacity-0"
-                                    }`}
-                                    sizes="(max-width: 768px) 100vw, 256px"
+                        <Link href={`/product/${id}`} prefetch={true}>
+                            {/* Only render current image + preload next for performance */}
+                            <Image
+                                src={allImages[currentImageIndex]}
+                                alt={`${name}`}
+                                fill
+                                className="object-cover transition-opacity duration-300"
+                                sizes="(max-width: 768px) 100vw, 256px"
+                                placeholder="blur"
+                                blurDataURL={blurDataURL}
+                                loading="lazy"
+                            />
+                            {/* Preload next image */}
+                            {hasMultipleImages && (
+                                <link
+                                    rel="prefetch"
+                                    href={allImages[(currentImageIndex + 1) % allImages.length]}
+                                    as="image"
                                 />
-                            ))}
+                            )}
                         </Link>
                         {isNew && (
                             <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground">
@@ -137,7 +166,7 @@ export function ProductCard({
                     <div className="flex flex-1 flex-col p-4">
                         <div className="flex-1">
                             <div className="text-sm text-muted-foreground">{category}</div>
-                            <Link href={`/product/${id}`}>
+                            <Link href={`/product/${id}`} prefetch={true}>
                                 <h3 className="text-lg font-semibold hover:underline group-hover:text-primary transition-colors">
                                     {name}
                                 </h3>
@@ -206,26 +235,33 @@ export function ProductCard({
                         </div>
                     </>
                 )}
-                <Link href={`/product/${id}`}>
+                <Link href={`/product/${id}`} prefetch={true}>
                     <div className="relative h-full w-full">
-                        {allImages.map((img, index) => (
-                            <Image
-                                key={`${id}-${index}`}
-                                src={img}
-                                alt={`${name} - Image ${index + 1}`}
-                                fill
-                                className={`object-cover transition-opacity duration-500 ${
-                                    index === currentImageIndex ? "opacity-100" : "opacity-0"
-                                }`}
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        {/* Only render current image + preload next for performance */}
+                        <Image
+                            src={allImages[currentImageIndex]}
+                            alt={`${name}`}
+                            fill
+                            className="object-cover transition-opacity duration-300"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            placeholder="blur"
+                            blurDataURL={blurDataURL}
+                            loading="lazy"
+                        />
+                        {/* Preload next image */}
+                        {hasMultipleImages && (
+                            <link
+                                rel="prefetch"
+                                href={allImages[(currentImageIndex + 1) % allImages.length]}
+                                as="image"
                             />
-                        ))}
+                        )}
                     </div>
                 </Link>
             </CardContent>
             <CardFooter className="flex flex-col items-start gap-2 p-4">
                 <div className="text-sm text-muted-foreground">{category}</div>
-                <Link href={`/product/${id}`} className="font-semibold hover:underline">
+                <Link href={`/product/${id}`} prefetch={true} className="font-semibold hover:underline">
                     {name}
                 </Link>
                 <div className="flex w-full items-center justify-between">
@@ -238,3 +274,6 @@ export function ProductCard({
         </Card>
     );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const MemoizedProductCard = memo(ProductCard);

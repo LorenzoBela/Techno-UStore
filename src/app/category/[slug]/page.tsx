@@ -1,9 +1,52 @@
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategorySidebar } from "@/components/product/CategorySidebar";
 import { getProductsByCategory, getAllCategories } from "@/lib/products";
+import { Suspense } from "react";
 
-// Force dynamic rendering to prevent prerender errors with database
-export const dynamic = 'force-dynamic';
+// Revalidate category pages every 5 minutes
+export const revalidate = 300;
+
+// Pre-generate category pages at build time for instant navigation
+export async function generateStaticParams() {
+    return [
+        { slug: 'apparel' },
+        { slug: 'accessories' },
+        { slug: 'supplies' },
+        { slug: 'uniforms' },
+    ];
+}
+
+// Loading skeleton for the product grid
+function ProductGridSkeleton() {
+    return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="space-y-3">
+                    <div className="aspect-square bg-muted animate-pulse rounded-lg" />
+                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// Server component that fetches products
+async function ProductsLoader({
+    slug,
+    filters,
+}: {
+    slug: string;
+    filters: {
+        types?: string[];
+        priceRange?: string[];
+        sizes?: string[];
+        sort?: string;
+    };
+}) {
+    const products = await getProductsByCategory(slug, filters);
+    return <ProductGrid products={products} />;
+}
 
 export default async function CategoryPage({
     params,
@@ -24,11 +67,8 @@ export default async function CategoryPage({
         sort: typeof resolvedSearchParams.sort === 'string' ? resolvedSearchParams.sort : undefined,
     };
 
-    // Fetch products and categories from database
-    const [products, categories] = await Promise.all([
-        getProductsByCategory(slug, filters),
-        getAllCategories(),
-    ]);
+    // Fetch categories (cached)
+    const categories = await getAllCategories();
 
     return (
         <div className="container py-8">
@@ -46,12 +86,11 @@ export default async function CategoryPage({
                     <CategorySidebar currentCategory={slug} categories={categories} />
                 </aside>
 
-                {/* Mobile Filter (Optional - for now just hiding sidebar on mobile, 
-                    but in real app would use a Sheet or Accordion) */}
-
-                {/* Product Grid with View Toggle */}
+                {/* Product Grid with Suspense for streaming */}
                 <main>
-                    <ProductGrid products={products} />
+                    <Suspense fallback={<ProductGridSkeleton />}>
+                        <ProductsLoader slug={slug} filters={filters} />
+                    </Suspense>
                 </main>
             </div>
         </div>

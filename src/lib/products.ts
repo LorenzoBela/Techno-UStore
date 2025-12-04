@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { Product, ProductVariant, Category } from "@/lib/types";
+import { unstable_cache } from "next/cache";
 
 // Re-export types for convenience
 export type { Product, ProductVariant, Category } from "@/lib/types";
@@ -113,35 +114,64 @@ export async function getProductsByCategory(
     }
 }
 
-// Fetch top products for each category (for home page)
+// Cached version for home page category showcases (1 hour cache)
+export const getCachedTopProductsByCategory = unstable_cache(
+    async (categorySlug: string, limit: number = 4) => {
+        return getProductsByCategory(categorySlug, undefined, limit);
+    },
+    ["top-products-by-category"],
+    { revalidate: 3600 } // Cache for 1 hour
+);
+
+// Fetch top products for each category (for home page) - uses cache
 export async function getTopProductsByCategory(categorySlug: string, limit: number = 4): Promise<Product[]> {
-    return getProductsByCategory(categorySlug, undefined, limit);
+    return getCachedTopProductsByCategory(categorySlug, limit);
 }
 
-// Fetch all products
-export async function getAllProducts(): Promise<Product[]> {
+// Fetch all products with pagination support
+export async function getAllProducts(options?: {
+    page?: number;
+    limit?: number;
+    includeTotal?: boolean;
+}): Promise<{ products: Product[]; total?: number }> {
     try {
-        const products = await prisma.product.findMany({
-            include: {
-                category: true,
-                images: true,
-                variants: true,
-            },
-            orderBy: { createdAt: "desc" },
-        });
+        const page = options?.page || 1;
+        const limit = options?.limit;
+        
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                include: {
+                    category: true,
+                    images: true,
+                    variants: true,
+                },
+                orderBy: { createdAt: "desc" },
+                ...(limit ? { take: limit, skip: (page - 1) * limit } : {}),
+            }),
+            options?.includeTotal ? prisma.product.count() : Promise.resolve(undefined),
+        ]);
 
-        return products.map(transformProduct);
+        return {
+            products: products.map(transformProduct),
+            total,
+        };
     } catch (error) {
         console.error("Error fetching all products:", error);
-        return [];
+        return { products: [] };
     }
 }
 
-// Fetch a single product by ID
-export async function getProductById(id: string): Promise<Product | null> {
+// Fetch a single product by ID or slug (with caching)
+const getProductByIdOrSlugUncached = async (idOrSlug: string): Promise<Product | null> => {
     try {
-        const product = await prisma.product.findUnique({
-            where: { id },
+        // Try to find by ID first, then by slug
+        const product = await prisma.product.findFirst({
+            where: {
+                OR: [
+                    { id: idOrSlug },
+                    { slug: idOrSlug },
+                ],
+            },
             include: {
                 category: true,
                 images: true,
@@ -152,14 +182,24 @@ export async function getProductById(id: string): Promise<Product | null> {
         if (!product) return null;
         return transformProduct(product);
     } catch (error) {
-        console.error("Error fetching product by ID:", error);
+        console.error("Error fetching product:", error);
         return null;
     }
-}
+};
 
-// Fetch all categories
-export async function getAllCategories(): Promise<{ name: string; slug: string; count: number }[]> {
-    try {
+// Cached version for product pages (5 minute cache)
+export const getProductById = unstable_cache(
+    getProductByIdOrSlugUncached,
+    ["product-by-id"],
+    { revalidate: 300, tags: ["products"] }
+);
+
+// Alias for slug-based lookup
+export const getProductBySlug = getProductById;
+
+// Cached categories (1 hour cache) - categories rarely change
+export const getCachedCategories = unstable_cache(
+    async () => {
         const categories = await prisma.category.findMany({
             include: {
                 _count: {
@@ -174,6 +214,15 @@ export async function getAllCategories(): Promise<{ name: string; slug: string; 
             slug: cat.slug,
             count: cat._count.products,
         }));
+    },
+    ["all-categories"],
+    { revalidate: 3600 } // Cache for 1 hour
+);
+
+// Fetch all categories
+export async function getAllCategories(): Promise<{ name: string; slug: string; count: number }[]> {
+    try {
+        return getCachedCategories();
     } catch (error) {
         console.error("Error fetching categories:", error);
         return [];

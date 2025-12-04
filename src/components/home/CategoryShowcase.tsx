@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
+import { memo } from "react";
 
 interface Product {
     id: string;
@@ -23,13 +24,18 @@ interface CategoryShowcaseProps {
     products: Product[];
 }
 
-export function CategoryShowcase({ title, href, products }: CategoryShowcaseProps) {
+// Memoize to prevent unnecessary re-renders
+export const CategoryShowcase = memo(function CategoryShowcase({ 
+    title, 
+    href, 
+    products 
+}: CategoryShowcaseProps) {
     return (
         <section className="py-12">
             <div className="container">
                 <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-                    <Link href={href}>
+                    <Link href={href} prefetch={true}>
                         <Button variant="ghost" className="gap-2">
                             View All <ArrowRight className="h-4 w-4" />
                         </Button>
@@ -43,4 +49,4 @@ export function CategoryShowcase({ title, href, products }: CategoryShowcaseProp
             </div>
         </section>
     );
-}
+});

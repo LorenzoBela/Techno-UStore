@@ -7,6 +7,7 @@ const { Pool } = pg;
 // Prisma client singleton pattern for Next.js
 const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
+    pool: pg.Pool | undefined;
 };
 
 function createPrismaClient(): PrismaClient {
@@ -21,15 +22,20 @@ function createPrismaClient(): PrismaClient {
     console.log(`🗄️  Database: Connecting (${isProduction ? "production" : "development"})`);
 
     // Create connection pool with SSL for production
-    // We use the adapter-pg to ensure stable connection pooling with Supabase
-    // and to satisfy the Prisma Client requirement for an adapter.
-    const pool = new Pool({ 
+    // Optimized pool settings for serverless (Vercel)
+    const pool = globalForPrisma.pool ?? new Pool({ 
         connectionString,
         ssl: { rejectUnauthorized: false }, // Required for Supabase
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
+        max: isProduction ? 5 : 10, // Fewer connections for serverless
+        idleTimeoutMillis: 20000, // Close idle connections faster
+        connectionTimeoutMillis: 5000, // Faster timeout
+        allowExitOnIdle: true, // Allow process to exit if pool is idle
     });
+    
+    // Cache pool in development
+    if (!isProduction) {
+        globalForPrisma.pool = pool;
+    }
     
     // Create the Prisma adapter
     const adapter = new PrismaPg(pool);

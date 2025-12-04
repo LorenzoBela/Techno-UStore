@@ -3,48 +3,81 @@ import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
 import { getTopProductsByCategory } from "@/lib/products";
+import { Suspense } from "react";
 
-// Force dynamic rendering to prevent prerender errors with database
-export const dynamic = 'force-dynamic';
+// Revalidate home page every 5 minutes for fresh products
+export const revalidate = 300;
 
-export default async function Home() {
-  // Fetch products from database with fallback to empty arrays
-  let topApparel: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
-  let topAccessories: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
-  let topSupplies: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
-  let topUniforms: Awaited<ReturnType<typeof getTopProductsByCategory>> = [];
+// Loading skeleton for category showcases
+function CategoryShowcaseSkeleton() {
+  return (
+    <div className="container py-8">
+      <div className="h-8 w-48 bg-muted animate-pulse rounded mb-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  try {
-    [topApparel, topAccessories, topSupplies, topUniforms] = await Promise.all([
-      getTopProductsByCategory("apparel", 4),
-      getTopProductsByCategory("accessories", 4),
-      getTopProductsByCategory("supplies", 4),
-      getTopProductsByCategory("uniforms", 4),
-    ]);
-  } catch (error) {
-    console.error("Error fetching products for home page:", error);
-  }
+// Server component that fetches products
+async function CategoryProducts({ 
+  categorySlug, 
+  title, 
+  href 
+}: { 
+  categorySlug: string; 
+  title: string; 
+  href: string; 
+}) {
+  const products = await getTopProductsByCategory(categorySlug, 4);
+  
+  if (products.length === 0) return null;
+  
+  return <CategoryShowcase title={title} href={href} products={products} />;
+}
 
+export default function Home() {
   return (
     <main className="flex min-h-screen flex-col">
       <Hero />
       <CategoryGrid />
 
-      {topApparel.length > 0 && (
-        <CategoryShowcase title="Top Apparel" href="/category/apparel" products={topApparel} />
-      )}
-      {topAccessories.length > 0 && (
-        <CategoryShowcase title="Trending Accessories" href="/category/accessories" products={topAccessories} />
-      )}
+      <Suspense fallback={<CategoryShowcaseSkeleton />}>
+        <CategoryProducts 
+          categorySlug="apparel" 
+          title="Top Apparel" 
+          href="/category/apparel" 
+        />
+      </Suspense>
+      
+      <Suspense fallback={<CategoryShowcaseSkeleton />}>
+        <CategoryProducts 
+          categorySlug="accessories" 
+          title="Trending Accessories" 
+          href="/category/accessories" 
+        />
+      </Suspense>
 
       <FeaturedSection />
 
-      {topSupplies.length > 0 && (
-        <CategoryShowcase title="School Supplies" href="/category/supplies" products={topSupplies} />
-      )}
-      {topUniforms.length > 0 && (
-        <CategoryShowcase title="Official Uniforms" href="/category/uniforms" products={topUniforms} />
-      )}
+      <Suspense fallback={<CategoryShowcaseSkeleton />}>
+        <CategoryProducts 
+          categorySlug="supplies" 
+          title="School Supplies" 
+          href="/category/supplies" 
+        />
+      </Suspense>
+      
+      <Suspense fallback={<CategoryShowcaseSkeleton />}>
+        <CategoryProducts 
+          categorySlug="uniforms" 
+          title="Official Uniforms" 
+          href="/category/uniforms" 
+        />
+      </Suspense>
     </main>
   );
 }
