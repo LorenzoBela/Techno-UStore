@@ -36,7 +36,7 @@ function revalidateCategories() {
     revalidatePath("/admin/products");
     revalidatePath("/"); // Home page
     revalidatePath("/category", "layout"); // All category pages
-    revalidateTag("categories");
+    revalidateTag("categories", "page");
 }
 
 // Generate slug from name
