@@ -22,7 +22,7 @@ interface DashboardContentProps {
         lastMonthOrders: number;
     };
     orderChange: string;
-    monthlyRevenue: Array<{ month: string; revenue: number }>;
+    monthlyRevenue: Array<{ name: string; total: number }>;
     recentOrders: Array<{ id: string; customer: string; date: string; status: string; total: number }>;
     recentSales: Array<{ id: string; customer: string; email: string; total: number }>;
     topProducts: Array<{ id: string; name: string; sales: number; image: string | null }>;

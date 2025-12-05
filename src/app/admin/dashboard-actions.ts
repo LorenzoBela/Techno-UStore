@@ -100,8 +100,8 @@ export async function getMonthlyRevenue() {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             months.push({
-                month: date.toLocaleString("default", { month: "short" }),
-                revenue: monthlyTotals[monthKey] || 0,
+                name: date.toLocaleString("default", { month: "short" }),
+                total: monthlyTotals[monthKey] || 0,
             });
         }
 
