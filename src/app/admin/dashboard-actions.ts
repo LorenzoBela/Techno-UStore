@@ -100,8 +100,8 @@ export async function getMonthlyRevenue() {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             months.push({
-                name: date.toLocaleString("default", { month: "short" }),
-                total: monthlyTotals[monthKey] || 0,
+                month: date.toLocaleString("default", { month: "short" }),
+                revenue: monthlyTotals[monthKey] || 0,
             });
         }
 
@@ -126,10 +126,9 @@ export async function getRecentOrders(limit = 5) {
         return orders.map((order) => ({
             id: order.id.slice(0, 8).toUpperCase(),
             customer: order.customerName,
-            email: order.customerEmail,
-            total: Number(order.totalAmount),
+            date: order.createdAt.toISOString(),
             status: order.status,
-            createdAt: order.createdAt.toISOString(),
+            total: Number(order.totalAmount),
         }));
     } catch (error) {
         console.error("Error fetching recent orders:", error);
@@ -188,18 +187,11 @@ export async function getTopProducts(limit = 5) {
         // Step 3: Combine data
         return topProducts.map(item => {
             const product = productMap.get(item.productId);
-            const name = product?.name || "Unknown Product";
             return {
                 id: item.productId,
-                name,
+                name: product?.name || "Unknown Product",
                 sales: item._sum.quantity || 0,
-                image: product?.images[0]?.url || "",
-                initials: name
-                    .split(" ")
-                    .map((w) => w[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase(),
+                image: product?.images[0]?.url || null,
             };
         });
     } catch (error) {
