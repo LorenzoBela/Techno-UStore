@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProductById } from "@/lib/products";
-import { ProductDetailClient } from "@/components/product/ProductDetailClient";
+import { ProductDetailWrapper } from "@/components/product/ProductDetailWrapper";
 import { prisma } from "@/lib/db";
 
 // Revalidate product pages every 5 minutes
@@ -33,5 +33,5 @@ export default async function ProductPage({
         notFound();
     }
 
-    return <ProductDetailClient product={product} />;
+    return <ProductDetailWrapper product={product} />;
 }

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { NavigationProgress } from "@/components/layout/NavigationProgress";
+import { StoreLayoutWrapper } from "@/components/storefront/StoreLayoutWrapper";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -40,11 +39,9 @@ export default async function RootLayout({
         <AuthProvider>
         <CategoriesProvider categories={categories}>
         <CartProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <StoreLayoutWrapper>
+            {children}
+          </StoreLayoutWrapper>
           <Toaster />
         </CartProvider>
         </CategoriesProvider>
