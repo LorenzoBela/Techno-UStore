@@ -68,30 +68,40 @@ export async function getDashboardStats() {
     }
 }
 
-// Monthly revenue for chart
+// Monthly revenue for chart - OPTIMIZED: Single query instead of 12
 export async function getMonthlyRevenue() {
     try {
         const now = new Date();
-        const months = [];
+        const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+        
+        // Single query to get all completed orders in the date range
+        const orders = await prisma.order.findMany({
+            where: {
+                status: "completed",
+                createdAt: { gte: startDate },
+            },
+            select: {
+                totalAmount: true,
+                createdAt: true,
+            },
+        });
 
+        // Group by month in memory (much faster than 12 DB queries)
+        const monthlyTotals: Record<string, number> = {};
+        
+        for (const order of orders) {
+            const monthKey = `${order.createdAt.getFullYear()}-${order.createdAt.getMonth()}`;
+            monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + Number(order.totalAmount);
+        }
+
+        // Build result array for last 12 months
+        const months = [];
         for (let i = 11; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-
-            const revenue = await prisma.order.aggregate({
-                where: {
-                    status: "completed",
-                    createdAt: {
-                        gte: date,
-                        lt: nextMonth,
-                    },
-                },
-                _sum: { totalAmount: true },
-            });
-
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             months.push({
                 name: date.toLocaleString("default", { month: "short" }),
-                total: Number(revenue._sum.totalAmount || 0),
+                total: monthlyTotals[monthKey] || 0,
             });
         }
 
@@ -148,9 +158,10 @@ export async function getRecentSales(limit = 5) {
     }
 }
 
-// Top selling products
+// Top selling products - OPTIMIZED: Single batch query instead of N+1
 export async function getTopProducts(limit = 5) {
     try {
+        // Step 1: Get top product IDs with sales counts
         const topProducts = await prisma.orderItem.groupBy({
             by: ["productId"],
             _sum: { quantity: true },
@@ -158,28 +169,39 @@ export async function getTopProducts(limit = 5) {
             take: limit,
         });
 
-        const productsWithDetails = await Promise.all(
-            topProducts.map(async (item) => {
-                const product = await prisma.product.findUnique({
-                    where: { id: item.productId },
-                    include: { images: true },
-                });
-                return {
-                    id: item.productId,
-                    name: product?.name || "Unknown Product",
-                    sales: item._sum.quantity || 0,
-                    image: product?.images[0]?.url || "",
-                    initials: (product?.name || "UP")
-                        .split(" ")
-                        .map((w) => w[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase(),
-                };
-            })
-        );
+        if (topProducts.length === 0) return [];
 
-        return productsWithDetails;
+        // Step 2: Batch fetch all products in ONE query (fixes N+1)
+        const productIds = topProducts.map(item => item.productId);
+        const products = await prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: {
+                id: true,
+                name: true,
+                images: { take: 1, select: { url: true } },
+            },
+        });
+
+        // Create lookup map for O(1) access
+        const productMap = new Map(products.map(p => [p.id, p]));
+
+        // Step 3: Combine data
+        return topProducts.map(item => {
+            const product = productMap.get(item.productId);
+            const name = product?.name || "Unknown Product";
+            return {
+                id: item.productId,
+                name,
+                sales: item._sum.quantity || 0,
+                image: product?.images[0]?.url || "",
+                initials: name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase(),
+            };
+        });
     } catch (error) {
         console.error("Error fetching top products:", error);
         return [];

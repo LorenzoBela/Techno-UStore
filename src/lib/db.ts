@@ -11,6 +11,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
+    // Use pooled connection URL for serverless (Supabase Supavisor)
+    // This is critical for Vercel - use the pooler URL, not direct connection
     const connectionString = process.env.DATABASE_URL;
     const isProduction = process.env.NODE_ENV === "production";
     
@@ -19,20 +21,28 @@ function createPrismaClient(): PrismaClient {
         throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    console.log(`🗄️  Database: Connecting (${isProduction ? "production" : "development"})`);
+    if (!isProduction) {
+        console.log(`🗄️  Database: Connecting (development mode)`);
+    }
 
-    // Create connection pool with SSL for production
-    // Optimized pool settings for serverless (Vercel)
+    // Optimized pool settings for Vercel serverless + Supabase
+    // IMPORTANT: Use Supabase's connection pooler URL (port 6543) for production
     const pool = globalForPrisma.pool ?? new Pool({ 
         connectionString,
         ssl: { rejectUnauthorized: false }, // Required for Supabase
-        max: isProduction ? 5 : 10, // Fewer connections for serverless
-        idleTimeoutMillis: 20000, // Close idle connections faster
-        connectionTimeoutMillis: 5000, // Faster timeout
+        
+        // Serverless-optimized settings:
+        max: isProduction ? 3 : 10, // Very few connections per instance (Vercel spawns many)
+        min: 0, // Allow pool to be completely empty
+        idleTimeoutMillis: 10000, // Close idle connections after 10s
+        connectionTimeoutMillis: 10000, // 10s timeout to get a connection
         allowExitOnIdle: true, // Allow process to exit if pool is idle
+        
+        // Statement timeout to prevent long-running queries from blocking
+        statement_timeout: 30000, // 30 second max query time
     });
     
-    // Cache pool in development
+    // Cache pool in development to prevent connection leaks during HMR
     if (!isProduction) {
         globalForPrisma.pool = pool;
     }

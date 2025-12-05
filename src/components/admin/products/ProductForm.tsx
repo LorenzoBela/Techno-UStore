@@ -21,8 +21,9 @@ import {
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { createProduct, updateProduct, uploadProductImage } from "@/app/admin/products/product-actions";
-import { X, Plus, Trash2 } from "lucide-react";
+import { createProduct, updateProduct, uploadProductImage, getCategories } from "@/app/admin/products/product-actions";
+import { getSubcategoriesByCategoryName } from "@/app/admin/products/categories/category-actions";
+import { X, Plus, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
 
@@ -38,16 +39,25 @@ interface Variant {
     imageUrl?: string;
 }
 
-const subcategories: Record<string, string[]> = {
-    Apparel: ["T-Shirts", "Hoodies", "Polos", "Jackets"],
-    Accessories: ["Caps", "Lanyards", "Tumblers", "Bags"],
-    Supplies: ["Notebooks", "Pens", "Art Materials"],
-    Uniforms: ["PE Uniforms", "School Uniforms", "Org Shirts"],
-};
+interface CategoryOption {
+    name: string;
+}
+
+interface SubcategoryOption {
+    id: string;
+    name: string;
+    slug: string;
+}
 
 export function ProductForm({ initialData }: ProductFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+
+    // Category and subcategory options from database
+    const [categories, setCategories] = useState<string[]>([]);
+    const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+    const [loadingSubcategories, setLoadingSubcategories] = useState(false);
 
     // Form State
     const [name, setName] = useState(initialData?.name || "");
@@ -56,6 +66,37 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [stock, setStock] = useState(initialData?.stock.toString() || "");
     const [category, setCategory] = useState(initialData?.category || "");
     const [subcategory, setSubcategory] = useState(initialData?.subcategory || "");
+
+    // Fetch categories on mount
+    useEffect(() => {
+        async function fetchCategories() {
+            setLoadingCategories(true);
+            const cats = await getCategories();
+            setCategories(cats);
+            setLoadingCategories(false);
+        }
+        fetchCategories();
+    }, []);
+
+    // Fetch subcategories when category changes
+    useEffect(() => {
+        async function fetchSubcategories() {
+            if (!category) {
+                setSubcategories([]);
+                return;
+            }
+            setLoadingSubcategories(true);
+            const subs = await getSubcategoriesByCategoryName(category);
+            setSubcategories(subs);
+            setLoadingSubcategories(false);
+            
+            // Clear subcategory if it's not in the new list
+            if (subcategory && !subs.find(s => s.name === subcategory)) {
+                setSubcategory("");
+            }
+        }
+        fetchSubcategories();
+    }, [category]);
 
     // Image State
     // For existing images, we store URLs. For new uploads, we store Files.
@@ -252,31 +293,56 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     </div>
                     <div className="grid gap-2">
                         <Label>Category</Label>
-                        <Select value={category} onValueChange={setCategory}>
+                        <Select value={category} onValueChange={setCategory} disabled={loadingCategories}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
+                                {loadingCategories ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>Loading...</span>
+                                    </div>
+                                ) : (
+                                    <SelectValue placeholder="Select a category" />
+                                )}
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Apparel">Apparel</SelectItem>
-                                <SelectItem value="Accessories">Accessories</SelectItem>
-                                <SelectItem value="Supplies">Supplies</SelectItem>
-                                <SelectItem value="Uniforms">Uniforms</SelectItem>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>
+                                        {cat}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     {category && (
                         <div className="grid gap-2">
                             <Label>Subcategory</Label>
-                            <Select value={subcategory} onValueChange={setSubcategory}>
+                            <Select 
+                                value={subcategory} 
+                                onValueChange={setSubcategory}
+                                disabled={loadingSubcategories}
+                            >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a subcategory" />
+                                    {loadingSubcategories ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>Loading...</span>
+                                        </div>
+                                    ) : (
+                                        <SelectValue placeholder="Select a subcategory" />
+                                    )}
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {subcategories[category]?.map((sub) => (
-                                        <SelectItem key={sub} value={sub}>
-                                            {sub}
+                                    {subcategories.length === 0 ? (
+                                        <SelectItem value="_none" disabled>
+                                            No subcategories available
                                         </SelectItem>
-                                    ))}
+                                    ) : (
+                                        subcategories.map((sub) => (
+                                            <SelectItem key={sub.id} value={sub.name}>
+                                                {sub.name}
+                                            </SelectItem>
+                                        ))
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>

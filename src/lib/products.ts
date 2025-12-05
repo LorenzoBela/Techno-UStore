@@ -43,7 +43,8 @@ function transformProduct(dbProduct: {
     };
 }
 
-// Fetch products by category slug with filters
+// Fetch products by category slug with filters and pagination
+// Optimized for 500+ products per category
 export async function getProductsByCategory(
     categorySlug: string,
     filters?: {
@@ -51,6 +52,8 @@ export async function getProductsByCategory(
         priceRange?: string[];
         sizes?: string[];
         sort?: string;
+        page?: number;
+        limit?: number;
     },
     limit?: number
 ): Promise<Product[]> {
@@ -66,7 +69,7 @@ export async function getProductsByCategory(
             where.subcategory = { in: filters.types };
         }
 
-        // Filter by Size
+        // Filter by Size (uses @@index([productId, size]))
         if (filters?.sizes && filters.sizes.length > 0) {
             where.variants = {
                 some: {
@@ -75,7 +78,7 @@ export async function getProductsByCategory(
             };
         }
 
-        // Filter by Price Range
+        // Filter by Price Range (uses @@index([categoryId, price]))
         if (filters?.priceRange && filters.priceRange.length > 0) {
             const priceConditions = filters.priceRange.map(range => {
                 if (range === 'under-500') return { price: { lt: 500 } };
@@ -92,21 +95,34 @@ export async function getProductsByCategory(
             }
         }
 
-        // Determine Sort Order
-        let orderBy: any = { createdAt: "desc" };
-        if (filters?.sort === 'price-asc') orderBy = { price: "asc" };
+        // Determine Sort Order (uses appropriate indexes)
+        let orderBy: any = { createdAt: "desc" }; // Uses @@index([categoryId, createdAt])
+        if (filters?.sort === 'price-asc') orderBy = { price: "asc" }; // Uses @@index([categoryId, price])
         if (filters?.sort === 'price-desc') orderBy = { price: "desc" };
         if (filters?.sort === 'newest') orderBy = { createdAt: "desc" };
 
+        // Pagination for large categories
+        const page = filters?.page || 1;
+        const pageSize = limit || filters?.limit || 24; // 24 products per page (4x6 grid)
+        const skip = (page - 1) * pageSize;
+
         const products = await prisma.product.findMany({
             where,
-            include: {
-                category: true,
-                images: true,
-                variants: true,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+                subcategory: true,
+                createdAt: true,
+                category: { select: { name: true } },
+                images: { take: 1, select: { url: true } }, // Only first image for grid view
+                variants: { select: { name: true, size: true, color: true, stock: true, imageUrl: true } },
             },
             orderBy,
-            take: limit,
+            skip,
+            take: pageSize,
         });
 
         return products.map(transformProduct);
@@ -230,3 +246,46 @@ export async function getAllCategories(): Promise<{ name: string; slug: string; 
         return [];
     }
 }
+
+// Cached active categories for navbar (5 min cache for faster updates)
+export const getNavbarCategories = unstable_cache(
+    async () => {
+        const categories = await prisma.category.findMany({
+            where: { isActive: true },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+            },
+            orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        });
+
+        return categories;
+    },
+    ["navbar-categories"],
+    { revalidate: 300, tags: ["categories"] } // Cache for 5 minutes
+);
+
+// Fetch subcategories by category slug (cached for 1 hour)
+export const getSubcategoriesByCategorySlug = unstable_cache(
+    async (categorySlug: string) => {
+        const category = await prisma.category.findUnique({
+            where: { slug: categorySlug.toLowerCase() },
+            select: {
+                subcategories: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                    },
+                    orderBy: { name: "asc" },
+                },
+            },
+        });
+
+        return category?.subcategories || [];
+    },
+    ["subcategories-by-slug"],
+    { revalidate: 3600, tags: ["categories"] } // Cache for 1 hour
+);

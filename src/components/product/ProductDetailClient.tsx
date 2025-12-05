@@ -114,6 +114,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
         addItem({
             id: `${product.id}${selectedVariant ? `-${selectedVariant.size}-${selectedVariant.color || ''}` : ''}`,
+            productId: product.id, // Store the actual product ID for database operations
             name: product.name,
             price: product.price,
             image: displayImage,
@@ -217,7 +218,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     )}
 
                     {/* Variant Selector */}
-                    {product.variants && product.variants.length > 0 && (
+                    {product.variants && product.variants.length > 0 ? (
                         <div className="space-y-4">
                             {/* Variant Name/Color Selector (if multiple groups) */}
                             {hasMultipleGroups && (
@@ -304,6 +305,16 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     <span className="ml-2">• Stock: {selectedVariant.stock} available</span>
                                 </p>
                             )}
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/50 p-4">
+                            <p className="text-sm text-amber-800 dark:text-amber-200">
+                                <span className="font-medium">Note:</span> This product has no size/color variants available. 
+                                It will be added to cart as a standard item.
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Stock available: {product.stock}
+                            </p>
                         </div>
                     )}
 

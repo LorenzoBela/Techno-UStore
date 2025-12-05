@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { useCategories } from "@/lib/categories-context";
 
 // Memoize navigation links to prevent re-renders
 const NavLink = memo(function NavLink({ 
@@ -27,26 +30,35 @@ const NavLink = memo(function NavLink({
     );
 });
 
-const NAV_ITEMS = [
-    { href: "/", label: "Home", matchExact: true },
-    { href: "/category/apparel", label: "Apparel", matchExact: false },
-    { href: "/category/accessories", label: "Accessories", matchExact: false },
-    { href: "/category/supplies", label: "Supplies", matchExact: false },
-    { href: "/category/uniforms", label: "Uniforms", matchExact: false },
-] as const;
-
 export function MainNav({
   className,
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
+  const { categories } = useCategories();
+
+  // Build nav items from categories context
+  const navItems = useMemo(() => {
+    const items = [{ href: "/", label: "Home", matchExact: true }];
+    
+    // Add categories from database
+    categories.forEach((cat) => {
+      items.push({
+        href: `/category/${cat.slug}`,
+        label: cat.name,
+        matchExact: false,
+      });
+    });
+
+    return items;
+  }, [categories]);
 
   return (
     <nav
       className={cn("flex items-center space-x-4 lg:space-x-6", className)}
       {...props}
     >
-      {NAV_ITEMS.map((item) => (
+      {navItems.map((item) => (
         <NavLink
           key={item.href}
           href={item.href}

@@ -18,14 +18,19 @@ export const metadata: Metadata = {
 
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
+import { CategoriesProvider } from "@/lib/categories-context";
+import { getNavbarCategories } from "@/lib/products";
 import { Toaster } from "@/components/ui/sonner";
 import { Suspense } from "react";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch categories for navbar on the server side
+  const categories = await getNavbarCategories();
+
   return (
     <html lang="en">
       <body className={inter.className} suppressHydrationWarning>
@@ -33,6 +38,7 @@ export default function RootLayout({
           <NavigationProgress />
         </Suspense>
         <AuthProvider>
+        <CategoriesProvider categories={categories}>
         <CartProvider>
           <div className="relative flex min-h-screen flex-col">
             <Header />
@@ -41,6 +47,7 @@ export default function RootLayout({
           </div>
           <Toaster />
         </CartProvider>
+        </CategoriesProvider>
         </AuthProvider>
       </body>
     </html>

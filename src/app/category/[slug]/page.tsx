@@ -1,6 +1,6 @@
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { CategorySidebar } from "@/components/product/CategorySidebar";
-import { getProductsByCategory, getAllCategories } from "@/lib/products";
+import { getProductsByCategory, getAllCategories, getSubcategoriesByCategorySlug } from "@/lib/products";
 import { Suspense } from "react";
 
 // Revalidate category pages every 5 minutes
@@ -8,12 +8,8 @@ export const revalidate = 300;
 
 // Pre-generate category pages at build time for instant navigation
 export async function generateStaticParams() {
-    return [
-        { slug: 'apparel' },
-        { slug: 'accessories' },
-        { slug: 'supplies' },
-        { slug: 'uniforms' },
-    ];
+    const categories = await getAllCategories();
+    return categories.map((cat) => ({ slug: cat.slug }));
 }
 
 // Loading skeleton for the product grid
@@ -67,8 +63,11 @@ export default async function CategoryPage({
         sort: typeof resolvedSearchParams.sort === 'string' ? resolvedSearchParams.sort : undefined,
     };
 
-    // Fetch categories (cached)
-    const categories = await getAllCategories();
+    // Fetch categories and subcategories (cached)
+    const [categories, subcategories] = await Promise.all([
+        getAllCategories(),
+        getSubcategoriesByCategorySlug(slug),
+    ]);
 
     return (
         <div className="container py-8">
@@ -83,7 +82,7 @@ export default async function CategoryPage({
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
                 {/* Sidebar */}
                 <aside className="hidden md:block">
-                    <CategorySidebar currentCategory={slug} categories={categories} />
+                    <CategorySidebar currentCategory={slug} categories={categories} subcategories={subcategories} />
                 </aside>
 
                 {/* Product Grid with Suspense for streaming */}

@@ -47,10 +47,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const supabase = getSupabaseClient();
 
+        // Helper to clear stale auth data
+        const clearAuthState = async () => {
+            setSession(null);
+            setUser(null);
+            setIsLoading(false);
+            // Try to sign out to clear any stale tokens
+            try {
+                await supabase.auth.signOut({ scope: 'local' });
+            } catch {
+                // Ignore errors during cleanup
+            }
+        };
+
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session }, error }) => {
+        supabase.auth.getSession().then(async ({ data: { session }, error }) => {
             if (error) {
                 console.error("Error getting session:", error);
+                // Check for refresh token errors and clear stale auth
+                if (error.message?.includes("Refresh Token") || error.message?.includes("refresh_token")) {
+                    console.warn("Stale refresh token detected, clearing auth state");
+                    await clearAuthState();
+                    return;
+                }
                 setSession(null);
                 setUser(null);
                 setIsLoading(false);
@@ -67,15 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     // If we have a role in the DB but not in the session, refresh
                     if (data?.user?.role && session.user.user_metadata?.role !== data.user.role) {
                         console.log("Refreshing session to get updated role...");
-                        supabase.auth.refreshSession();
+                        supabase.auth.refreshSession().catch(() => {
+                            // If refresh fails, just continue with current session
+                        });
                     }
                 });
             }
-        }).catch((error) => {
+        }).catch(async (error) => {
             console.error("Failed to get session:", error);
-            setSession(null);
-            setUser(null);
-            setIsLoading(false);
+            await clearAuthState();
         });
 
         // Listen for auth changes
@@ -85,6 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Handle TOKEN_REFRESHED error or session issues
             if (event === "TOKEN_REFRESHED" && !session) {
                 console.warn("Token refresh failed, clearing session");
+                await clearAuthState();
+                return;
+            }
+
+            // Handle sign out event
+            if (event === "SIGNED_OUT") {
                 setSession(null);
                 setUser(null);
                 setIsLoading(false);
@@ -104,10 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // If we have a role in the DB but not in the session, refresh
                 if (data?.user?.role && session.user.user_metadata?.role !== data.user.role) {
                     console.log("Refreshing session to get updated role...");
-                    const { data: { session: newSession } } = await supabase.auth.refreshSession();
-                    if (newSession) {
-                        setSession(newSession);
-                        setUser(newSession.user);
+                    try {
+                        const { data: { session: newSession } } = await supabase.auth.refreshSession();
+                        if (newSession) {
+                            setSession(newSession);
+                            setUser(newSession.user);
+                        }
+                    } catch {
+                        // If refresh fails, continue with current session
                     }
                 }
             }

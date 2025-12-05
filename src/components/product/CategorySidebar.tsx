@@ -15,9 +15,16 @@ interface Category {
     count: number;
 }
 
+interface Subcategory {
+    id: string;
+    name: string;
+    slug: string;
+}
+
 interface CategorySidebarProps {
     currentCategory: string;
     categories?: Category[];
+    subcategories?: Subcategory[];
 }
 
 // Fallback categories if none provided
@@ -28,20 +35,13 @@ const defaultCategories: Category[] = [
     { name: "Uniforms", slug: "uniforms", count: 0 },
 ];
 
-const subcategories: Record<string, string[]> = {
-    apparel: ["T-Shirts", "Hoodies", "Polos", "Jackets"],
-    accessories: ["Caps", "Lanyards", "Tumblers", "Bags"],
-    supplies: ["Notebooks", "Pens", "Art Materials"],
-    uniforms: ["PE Uniforms", "School Uniforms", "Org Shirts"],
-};
-
-export function CategorySidebar({ currentCategory, categories }: CategorySidebarProps) {
+export function CategorySidebar({ currentCategory, categories, subcategories = [] }: CategorySidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
     const displayCategories = categories && categories.length > 0 ? categories : defaultCategories;
-    const currentSubcategories = subcategories[currentCategory.toLowerCase()] || [];
+    const currentSubcategories = subcategories;
 
     // Create Query String
     const createQueryString = useCallback(
@@ -119,15 +119,15 @@ export function CategorySidebar({ currentCategory, categories }: CategorySidebar
                         <h3 className="font-semibold text-lg">Type</h3>
                         <div className="flex flex-col gap-3">
                             {currentSubcategories.map((sub) => (
-                                <div key={sub} className="flex items-center space-x-2">
+                                <div key={sub.id} className="flex items-center space-x-2">
                                     <Checkbox
-                                        id={`sub-${sub}`}
-                                        checked={isChecked('types', sub)}
+                                        id={`sub-${sub.slug}`}
+                                        checked={isChecked('types', sub.name)}
                                         onCheckedChange={() => {
-                                            router.push(pathname + '?' + createQueryString('types', sub));
+                                            router.push(pathname + '?' + createQueryString('types', sub.name));
                                         }}
                                     />
-                                    <Label htmlFor={`sub-${sub}`}>{sub}</Label>
+                                    <Label htmlFor={`sub-${sub.slug}`}>{sub.name}</Label>
                                 </div>
                             ))}
                         </div>

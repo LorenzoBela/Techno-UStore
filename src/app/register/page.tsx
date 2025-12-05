@@ -5,16 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 
-export default function RegisterPage() {
+function RegisterForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { signUp, signInWithGoogle } = useAuth();
     const [isLoading, setIsLoading] = React.useState(false);
     const [privacyAccepted, setPrivacyAccepted] = React.useState(false);
+
+    const redirectUrl = searchParams.get("redirect") || "/";
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -52,18 +56,40 @@ export default function RegisterPage() {
             setIsLoading(false);
         } else {
             toast.success("Account created! Please check your email to verify your account.");
-            router.push("/login");
+            // Redirect to login with the same redirect param
+            const loginUrl = redirectUrl !== "/" 
+                ? `/login?redirect=${encodeURIComponent(redirectUrl)}` 
+                : "/login";
+            router.push(loginUrl);
         }
     }
 
     async function handleGoogleSignIn() {
         setIsLoading(true);
+        // Store redirect URL in sessionStorage for OAuth callback
+        if (redirectUrl !== "/") {
+            sessionStorage.setItem("auth_redirect", redirectUrl);
+        }
         const { error } = await signInWithGoogle();
         if (error) {
             toast.error(error.message || "Failed to sign in with Google");
             setIsLoading(false);
         }
     }
+
+    // Check for stored redirect on mount (for OAuth callbacks)
+    React.useEffect(() => {
+        const storedRedirect = sessionStorage.getItem("auth_redirect");
+        if (storedRedirect) {
+            sessionStorage.removeItem("auth_redirect");
+            router.push(storedRedirect);
+        }
+    }, [router]);
+
+    // Build the login URL with redirect param
+    const loginUrl = redirectUrl !== "/" 
+        ? `/login?redirect=${encodeURIComponent(redirectUrl)}` 
+        : "/login";
 
     return (
         <div className="container flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center">
@@ -189,7 +215,7 @@ export default function RegisterPage() {
 
                 <p className="px-8 text-center text-sm text-muted-foreground">
                     <Link
-                        href="/login"
+                        href={loginUrl}
                         className="hover:text-brand underline underline-offset-4"
                     >
                         Already have an account? Sign In
@@ -197,5 +223,17 @@ export default function RegisterPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="container flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center">
+                <div className="animate-pulse">Loading...</div>
+            </div>
+        }>
+            <RegisterForm />
+        </Suspense>
     );
 }

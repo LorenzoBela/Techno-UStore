@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useCategories } from "@/lib/categories-context";
 
 import { SearchBar } from "@/components/ui/search-bar";
 
 export function MobileNav() {
     const [open, setOpen] = useState(false);
+    const { categories } = useCategories();
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -39,34 +41,16 @@ export function MobileNav() {
                     >
                         Home
                     </Link>
-                    <Link
-                        href="/category/apparel"
-                        className="text-sm font-medium hover:text-primary"
-                        onClick={() => setOpen(false)}
-                    >
-                        Apparel
-                    </Link>
-                    <Link
-                        href="/category/accessories"
-                        className="text-sm font-medium hover:text-primary"
-                        onClick={() => setOpen(false)}
-                    >
-                        Accessories
-                    </Link>
-                    <Link
-                        href="/category/supplies"
-                        className="text-sm font-medium hover:text-primary"
-                        onClick={() => setOpen(false)}
-                    >
-                        Supplies
-                    </Link>
-                    <Link
-                        href="/category/uniforms"
-                        className="text-sm font-medium hover:text-primary"
-                        onClick={() => setOpen(false)}
-                    >
-                        Uniforms
-                    </Link>
+                    {categories.map((category) => (
+                        <Link
+                            key={category.id}
+                            href={`/category/${category.slug}`}
+                            className="text-sm font-medium hover:text-primary"
+                            onClick={() => setOpen(false)}
+                        >
+                            {category.name}
+                        </Link>
+                    ))}
                 </div>
             </SheetContent>
         </Sheet>

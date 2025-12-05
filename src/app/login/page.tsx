@@ -3,15 +3,19 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { signIn, signInWithGoogle } = useAuth();
     const [isLoading, setIsLoading] = React.useState(false);
+
+    const redirectUrl = searchParams.get("redirect") || "/";
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -37,18 +41,36 @@ export default function LoginPage() {
             setIsLoading(false);
         } else {
             toast.success("Welcome back!");
-            router.push("/");
+            router.push(redirectUrl);
         }
     }
 
     async function handleGoogleSignIn() {
         setIsLoading(true);
+        // Store redirect URL in sessionStorage for OAuth callback
+        if (redirectUrl !== "/") {
+            sessionStorage.setItem("auth_redirect", redirectUrl);
+        }
         const { error } = await signInWithGoogle();
         if (error) {
             toast.error(error.message || "Failed to sign in with Google");
             setIsLoading(false);
         }
     }
+
+    // Check for stored redirect on mount (for OAuth callbacks)
+    React.useEffect(() => {
+        const storedRedirect = sessionStorage.getItem("auth_redirect");
+        if (storedRedirect) {
+            sessionStorage.removeItem("auth_redirect");
+            router.push(storedRedirect);
+        }
+    }, [router]);
+
+    // Build the register URL with redirect param
+    const registerUrl = redirectUrl !== "/" 
+        ? `/register?redirect=${encodeURIComponent(redirectUrl)}` 
+        : "/register";
 
     return (
         <div className="container flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center">
@@ -116,7 +138,7 @@ export default function LoginPage() {
 
                 <p className="px-8 text-center text-sm text-muted-foreground">
                     <Link
-                        href="/register"
+                        href={registerUrl}
                         className="hover:text-brand underline underline-offset-4"
                     >
                         Don&apos;t have an account? Sign Up
@@ -124,5 +146,17 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="container flex h-[calc(100vh-4rem)] w-full flex-col items-center justify-center">
+                <div className="animate-pulse">Loading...</div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }
