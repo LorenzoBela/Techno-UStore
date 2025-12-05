@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, Search, ShoppingCart, User } from "lucide-react";
+import { Home, Search, ShoppingCart, User, Heart } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
@@ -22,11 +23,18 @@ const navItems = [
         isSearch: true,
     },
     {
+        title: "Wishlist",
+        href: "/wishlist",
+        icon: Heart,
+        exact: false,
+        showWishlistBadge: true,
+    },
+    {
         title: "Cart",
         href: "/cart",
         icon: ShoppingCart,
         exact: false,
-        showBadge: true,
+        showCartBadge: true,
     },
     {
         title: "Profile",
@@ -39,6 +47,7 @@ const navItems = [
 export function MobileBottomNav() {
     const pathname = usePathname();
     const { cartCount } = useCart();
+    const { wishlistCount } = useWishlist();
 
     const isActive = (href: string, exact: boolean) => {
         if (exact) return pathname === href;
@@ -56,13 +65,14 @@ export function MobileBottomNav() {
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href, item.exact);
+                    const badgeCount = item.showCartBadge ? cartCount : item.showWishlistBadge ? wishlistCount : 0;
 
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200 min-w-[64px] relative",
+                                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 min-w-[56px] relative",
                                 active
                                     ? "text-primary"
                                     : "text-muted-foreground hover:text-foreground active:scale-95"
@@ -73,11 +83,11 @@ export function MobileBottomNav() {
                                     "h-6 w-6 transition-transform",
                                     active && "scale-110"
                                 )} />
-                                {item.showBadge && cartCount > 0 && (
+                                {badgeCount > 0 && (
                                     <Badge 
                                         className="absolute -top-2 -right-2 h-5 min-w-[20px] justify-center rounded-full p-0 text-[10px] font-bold animate-in zoom-in-50"
                                     >
-                                        {cartCount > 99 ? "99+" : cartCount}
+                                        {badgeCount > 99 ? "99+" : badgeCount}
                                     </Badge>
                                 )}
                             </div>

@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { toast } from "sonner";
 import { Product, ProductVariant } from "@/lib/types";
 
@@ -16,11 +17,14 @@ interface MobileProductDetailProps {
 
 export function MobileProductDetail({ product }: MobileProductDetailProps) {
     const { addItem } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
         product.variants && product.variants.length > 0 ? product.variants[0] : null
     );
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const isWishlisted = isInWishlist(product.id);
 
     // Get all images
     const allImages = product.images || [product.image].filter(Boolean);
@@ -126,6 +130,26 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
         }
     };
 
+    const handleToggleWishlist = () => {
+        toggleWishlist({
+            id: product.id,
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            category: product.category,
+            subcategory: product.subcategory,
+        });
+        
+        if (isWishlisted) {
+            toast.success("Removed from wishlist");
+        } else {
+            toast.success("Added to wishlist", {
+                description: product.name,
+            });
+        }
+    };
+
     return (
         <div className="flex flex-col min-h-screen pb-32">
             {/* Image Gallery - Full Width Swipeable */}
@@ -172,8 +196,11 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
                     >
                         <Share2 className="h-5 w-5" />
                     </button>
-                    <button className="h-10 w-10 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-lg">
-                        <Heart className="h-5 w-5" />
+                    <button 
+                        onClick={handleToggleWishlist}
+                        className="h-10 w-10 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-lg"
+                    >
+                        <Heart className={`h-5 w-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
                     </button>
                 </div>
 
@@ -346,9 +373,10 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
                     size="lg"
                     variant="outline"
                     className="h-12 w-12 p-0"
-                    aria-label="Add to wishlist"
+                    aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                    onClick={handleToggleWishlist}
                 >
-                    <Heart className="h-5 w-5" />
+                    <Heart className={`h-5 w-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
                 </Button>
                 
                 {/* Add to Cart Button */}

@@ -6,6 +6,7 @@ import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight } from "lucide-r
 import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { toast } from "sonner";
 import { Product, ProductVariant } from "@/lib/types";
 
@@ -15,11 +16,14 @@ interface ProductDetailClientProps {
 
 export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const { addItem } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
         product.variants && product.variants.length > 0 ? product.variants[0] : null
     );
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [manualImageSelection, setManualImageSelection] = useState(false);
+
+    const isWishlisted = isInWishlist(product.id);
 
     // Get all images including variant images
     const allImages = product.images || [product.image].filter(Boolean);
@@ -128,6 +132,26 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         toast.success("Added to cart", {
             description: `${product.name}${variantInfo} has been added to your cart.`,
         });
+    };
+
+    const handleToggleWishlist = () => {
+        toggleWishlist({
+            id: product.id,
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            category: product.category,
+            subcategory: product.subcategory,
+        });
+        
+        if (isWishlisted) {
+            toast.success("Removed from wishlist");
+        } else {
+            toast.success("Added to wishlist", {
+                description: product.name,
+            });
+        }
     };
 
     return (
@@ -329,9 +353,14 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             <ShoppingCart className="h-5 w-5" />
                             {inStock ? "Add to Cart" : "Out of Stock"}
                         </Button>
-                        <Button size="lg" variant="outline" className="gap-2">
-                            <Heart className="h-5 w-5" />
-                            Wishlist
+                        <Button 
+                            size="lg" 
+                            variant="outline" 
+                            className="gap-2"
+                            onClick={handleToggleWishlist}
+                        >
+                            <Heart className={`h-5 w-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                            {isWishlisted ? "Wishlisted" : "Wishlist"}
                         </Button>
                         <Button size="icon" variant="ghost">
                             <Share2 className="h-5 w-5" />

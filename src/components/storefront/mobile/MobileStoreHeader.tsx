@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, ChevronRight, ShoppingCart } from "lucide-react";
+import { Menu, ChevronRight, ShoppingCart, Heart } from "lucide-react";
 import { useCategories } from "@/lib/categories-context";
 import { SearchBar } from "@/components/ui/search-bar";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { Badge } from "@/components/ui/badge";
 import { UserNav } from "@/components/layout/UserNav";
 
@@ -18,6 +19,7 @@ export function MobileStoreHeader() {
     const pathname = usePathname();
     const { categories } = useCategories();
     const { cartCount } = useCart();
+    const { wishlistCount } = useWishlist();
 
     // Don't show on admin pages
     if (pathname?.startsWith("/admin")) {
@@ -143,8 +145,19 @@ export function MobileStoreHeader() {
                     </span>
                 </Link>
 
-                {/* Right Side - Cart & Account */}
+                {/* Right Side - Wishlist, Cart & Account */}
                 <div className="flex items-center gap-1">
+                    <Link href="/wishlist">
+                        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                            <Heart className="h-5 w-5" />
+                            {wishlistCount > 0 && (
+                                <Badge className="absolute -top-1 -right-1 h-5 min-w-[20px] justify-center rounded-full p-0 text-[10px]">
+                                    {wishlistCount > 99 ? "99+" : wishlistCount}
+                                </Badge>
+                            )}
+                            <span className="sr-only">Wishlist</span>
+                        </Button>
+                    </Link>
                     <Link href="/cart">
                         <Button variant="ghost" size="icon" className="relative h-9 w-9">
                             <ShoppingCart className="h-5 w-5" />

@@ -27,15 +27,16 @@ enum PaymentStatus {
 }
 
 model User {
-  id        String   @id // This will be the Supabase Auth user ID (UUID)
-  email     String   @unique
+  id        String    @id // This will be the Supabase Auth user ID (UUID)
+  email     String    @unique
   name      String?
   phone     String?
-  role      UserRole @default(user)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      UserRole  @default(user)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   orders    Order[]
   cart      Cart?
+  wishlist  Wishlist?
 
   @@index([role]) // For admin user lookups
   @@index([createdAt(sort: Desc)]) // For recent users
@@ -232,5 +233,33 @@ model CartItem {
 
   @@unique([cartId, productId, size, color]) // Prevent duplicate items with same variant
   @@index([cartId])
+  @@index([productId])
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  name       String   // Store product name at time of adding
+  price      Decimal  // Store price at time of adding
+  image      String?  // Store image URL
+  category   String?
+  subcategory String?
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId]) // Prevent duplicate products in wishlist
+  @@index([wishlistId])
   @@index([productId])
 }

@@ -9,13 +9,15 @@ import { MobileNav } from "./MobileNav";
 import { UserNav } from "./UserNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { SearchBar } from "@/components/ui/search-bar";
 
 export function Header() {
     const { cartCount } = useCart();
+    const { wishlistCount } = useWishlist();
     const [isSearchOpen, setIsSearchOpen] = React.useState(false);
     const pathname = usePathname();
 
@@ -84,6 +86,17 @@ export function Header() {
                         <span className="sr-only">Search</span>
                     </Button>
                     <nav className="flex items-center space-x-2">
+                        <Link href="/wishlist">
+                            <Button variant="ghost" size="icon" className="relative">
+                                <Heart className="h-5 w-5" />
+                                {wishlistCount > 0 && (
+                                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center rounded-full p-0 text-xs">
+                                        {wishlistCount}
+                                    </Badge>
+                                )}
+                                <span className="sr-only">Wishlist</span>
+                            </Button>
+                        </Link>
                         <Link href="/cart">
                             <Button variant="ghost" size="icon" className="relative">
                                 <ShoppingCart className="h-5 w-5" />

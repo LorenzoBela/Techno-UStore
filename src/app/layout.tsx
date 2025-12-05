@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 import { CartProvider } from "@/lib/cart-context";
+import { WishlistProvider } from "@/lib/wishlist-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { CategoriesProvider } from "@/lib/categories-context";
 import { getNavbarCategories } from "@/lib/products";
@@ -39,10 +40,12 @@ export default async function RootLayout({
         <AuthProvider>
         <CategoriesProvider categories={categories}>
         <CartProvider>
+        <WishlistProvider>
           <StoreLayoutWrapper>
             {children}
           </StoreLayoutWrapper>
           <Toaster />
+        </WishlistProvider>
         </CartProvider>
         </CategoriesProvider>
         </AuthProvider>
