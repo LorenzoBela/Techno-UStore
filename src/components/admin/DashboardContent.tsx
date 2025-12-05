@@ -180,11 +180,11 @@ export function DashboardContent({
                                                     {product.name}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {product.soldCount} sold
+                                                    {product.sales} sold
                                                 </p>
                                             </div>
-                                            <span className="text-sm font-semibold">
-                                                ₱{product.revenue.toLocaleString()}
+                                            <span className="text-sm font-semibold text-muted-foreground">
+                                                #{index + 1}
                                             </span>
                                         </div>
                                     ))}
