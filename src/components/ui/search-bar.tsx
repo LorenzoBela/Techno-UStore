@@ -15,7 +15,7 @@ interface SearchProduct {
     category: string;
 }
 
-export function SearchBar({ className }: { className?: string }) {
+export function SearchBar({ className, autoFocus }: { className?: string; autoFocus?: boolean }) {
     const router = useRouter();
     const [query, setQuery] = React.useState("");
     const [isOpen, setIsOpen] = React.useState(false);
@@ -95,6 +95,7 @@ export function SearchBar({ className }: { className?: string }) {
                     onFocus={() => {
                         if (query.length > 0) setIsOpen(true);
                     }}
+                    autoFocus={autoFocus}
                 />
             </div>
             {isOpen && filteredProducts.length > 0 && (

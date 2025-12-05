@@ -12,7 +12,7 @@ import { useCallback } from "react";
 interface Category {
     name: string;
     slug: string;
-    count: number;
+    count?: number;
 }
 
 interface Subcategory {
@@ -102,7 +102,7 @@ export function CategorySidebar({ currentCategory, categories, subcategories = [
                                 )}
                             >
                                 {category.name}
-                                {category.count > 0 && (
+                                {(category.count ?? 0) > 0 && (
                                     <span className="ml-auto text-xs opacity-60">({category.count})</span>
                                 )}
                             </Button>
