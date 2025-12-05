@@ -18,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Sync user to database
-async function syncUserToDatabase(accessToken: string) {
+async function syncUserToDatabase(accessToken: string, retried = false): Promise<any> {
     try {
         const response = await fetch("/api/auth/sync", {
             method: "POST",
@@ -29,12 +29,24 @@ async function syncUserToDatabase(accessToken: string) {
         });
 
         if (!response.ok) {
-            throw new Error(`Sync failed with status ${response.status}`);
+            // If 401 and haven't retried, try refreshing the session first
+            if (response.status === 401 && !retried) {
+                console.log("Sync returned 401, attempting to refresh token...");
+                const supabase = getSupabaseClient();
+                const { data: { session: newSession } } = await supabase.auth.refreshSession();
+                if (newSession?.access_token) {
+                    return syncUserToDatabase(newSession.access_token, true);
+                }
+            }
+            // Non-critical: user is still authenticated via Supabase
+            console.warn(`Sync returned ${response.status}, continuing without DB sync`);
+            return null;
         }
 
         return await response.json();
     } catch (error) {
-        console.error("Failed to sync user to database:", error);
+        // Non-critical error - user is still authenticated via Supabase
+        console.warn("Failed to sync user to database (non-critical):", error);
         return null;
     }
 }

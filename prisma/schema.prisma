@@ -81,6 +81,7 @@ model Product {
   subcategoryRel Subcategory?    @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
   price         Decimal
   stock         Int
+  isFeatured    Boolean          @default(false) // Featured products for homepage showcase
   categoryId    String
   category      Category         @relation(fields: [categoryId], references: [id])
   images        ProductImage[]
@@ -99,6 +100,7 @@ model Product {
   @@index([price]) // Price range filtering
   @@index([stock]) // Low stock alerts
   @@index([name]) // Name search (basic)
+  @@index([isFeatured]) // Featured products lookup
 }
 
 model ProductVariant {

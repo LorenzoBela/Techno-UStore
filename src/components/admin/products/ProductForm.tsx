@@ -23,9 +23,10 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createProduct, updateProduct, uploadProductImage, getCategories } from "@/app/admin/products/product-actions";
 import { getSubcategoriesByCategoryName } from "@/app/admin/products/categories/category-actions";
-import { X, Plus, Trash2, Loader2 } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Star } from "lucide-react";
 import Image from "next/image";
 import { Product } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
 
 interface ProductFormProps {
     initialData?: Product;
@@ -66,6 +67,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [stock, setStock] = useState(initialData?.stock.toString() || "");
     const [category, setCategory] = useState(initialData?.category || "");
     const [subcategory, setSubcategory] = useState(initialData?.subcategory || "");
+    const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured ?? false);
 
     // Fetch categories on mount
     useEffect(() => {
@@ -216,6 +218,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 stock: parseInt(stock),
                 category,
                 subcategory,
+                isFeatured,
                 images: finalImages,
                 variants: finalVariants,
             };
@@ -347,6 +350,23 @@ export function ProductForm({ initialData }: ProductFormProps) {
                             </Select>
                         </div>
                     )}
+                    <div className="flex items-center gap-3 p-3 border rounded-md bg-amber-50/50">
+                        <Switch
+                            id="featured"
+                            checked={isFeatured}
+                            onCheckedChange={setIsFeatured}
+                            className="data-[state=checked]:bg-amber-500"
+                        />
+                        <div className="flex items-center gap-2">
+                            <Star className={`h-4 w-4 ${isFeatured ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+                            <Label htmlFor="featured" className="cursor-pointer">
+                                Featured Product
+                            </Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-auto">
+                            Show on homepage showcase
+                        </p>
+                    </div>
                 </div>
 
                 <div className="space-y-4">

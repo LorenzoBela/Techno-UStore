@@ -1,6 +1,6 @@
-import { ProductForm } from "@/components/admin/products/ProductForm";
 import { getProduct } from "../../product-actions";
 import { notFound } from "next/navigation";
+import { EditProductContent } from "@/components/admin/EditProductContent";
 
 // Force dynamic rendering to prevent prerender errors with database
 export const dynamic = 'force-dynamic';
@@ -13,12 +13,5 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         notFound();
     }
 
-    return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Edit Product</h2>
-            </div>
-            <ProductForm initialData={product} />
-        </div>
-    );
+    return <EditProductContent product={product} />;
 }

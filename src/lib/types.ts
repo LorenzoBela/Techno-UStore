@@ -18,6 +18,7 @@ export interface Product {
     category: string;
     subcategory?: string;
     isNew?: boolean;
+    isFeatured?: boolean;
     stock: number;
     variants?: ProductVariant[];
 }

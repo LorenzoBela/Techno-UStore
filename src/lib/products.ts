@@ -289,3 +289,41 @@ export const getSubcategoriesByCategorySlug = unstable_cache(
     ["subcategories-by-slug"],
     { revalidate: 3600, tags: ["categories"] } // Cache for 1 hour
 );
+
+// Fetch featured products for homepage showcase (cached for 5 minutes)
+// Optimized for handling many featured products from different categories
+export const getFeaturedProducts = unstable_cache(
+    async (limit: number = 12) => {
+        try {
+            const products = await prisma.product.findMany({
+                where: {
+                    isFeatured: true,
+                    stock: { gt: 0 }, // Only show in-stock products
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    price: true,
+                    stock: true,
+                    subcategory: true,
+                    createdAt: true,
+                    category: { select: { name: true } },
+                    images: { take: 4, select: { url: true } }, // Limit images per product for performance
+                    variants: { select: { name: true, size: true, color: true, stock: true, imageUrl: true } },
+                },
+                orderBy: [
+                    { createdAt: "desc" }, // Newest featured first
+                ],
+                take: limit,
+            });
+
+            return products.map(transformProduct);
+        } catch (error) {
+            console.error("Error fetching featured products:", error);
+            return [];
+        }
+    },
+    ["featured-products"],
+    { revalidate: 300, tags: ["products"] } // Cache for 5 minutes
+);

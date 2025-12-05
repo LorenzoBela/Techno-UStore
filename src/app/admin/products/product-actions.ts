@@ -2,13 +2,14 @@
 
 import { prisma } from "@/lib/db";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 // Helper to revalidate all product-related caches
 function revalidateProducts() {
     revalidatePath("/admin/products");
     revalidatePath("/"); // Home page showcases
     revalidatePath("/category", "layout"); // All category pages
+    revalidateTag("products", "max"); // Clear unstable_cache for featured products
 }
 
 // Maximum file size: 5MB (reasonable for product images)
@@ -126,6 +127,7 @@ interface CreateProductData {
     category: string;
     subcategory?: string;
     stock: number;
+    isFeatured?: boolean;
     images: string[];
     variants: { name: string; size: string; color: string; stock: number; imageUrl?: string }[];
 }
@@ -162,6 +164,7 @@ export async function createProduct(data: CreateProductData) {
                     price: data.price,
                     stock: data.stock,
                     slug: productSlug,
+                    isFeatured: data.isFeatured ?? false,
                     category: { connect: { id: category.id } },
                     subcategory: data.subcategory,
                     images: {
@@ -203,6 +206,7 @@ export async function updateProduct(
         stock: number;
         category: string;
         subcategory?: string;
+        isFeatured?: boolean;
         images: string[];
         variants?: { name?: string; size: string; color?: string; stock: number; imageUrl?: string }[];
     },
@@ -246,6 +250,7 @@ export async function updateProduct(
                     description: data.description,
                     price: data.price,
                     stock: data.stock,
+                    isFeatured: data.isFeatured,
                     category: { connect: { id: category.id } },
                     subcategory: data.subcategory,
                 },
@@ -366,6 +371,7 @@ export async function getProducts(
                     price: true,
                     stock: true,
                     subcategory: true,
+                    isFeatured: true,
                     createdAt: true,
                     category: { select: { name: true } },
                     images: { take: 1, select: { url: true } }, // Only first image for list view
@@ -389,6 +395,7 @@ export async function getProducts(
             category: p.category.name,
             subcategory: p.subcategory || undefined,
             stock: p.stock,
+            isFeatured: p.isFeatured,
             variants: p.variants.map((v) => ({
                 name: v.name || undefined,
                 size: v.size,
@@ -435,6 +442,7 @@ export async function getProduct(id: string) {
             category: product.category.name,
             subcategory: product.subcategory || undefined,
             stock: product.stock,
+            isFeatured: product.isFeatured,
             updatedAt: product.updatedAt.toISOString(), // For optimistic locking
             variants: product.variants.map((v) => ({
                 name: v.name || undefined,
@@ -506,5 +514,46 @@ export async function getCategories() {
     } catch (error) {
         console.error("Error fetching categories:", error);
         return [];
+    }
+}
+
+// Toggle featured status for a product
+export async function toggleFeaturedProduct(id: string) {
+    try {
+        const product = await prisma.product.findUnique({
+            where: { id },
+            select: { isFeatured: true },
+        });
+
+        if (!product) {
+            return { error: "Product not found" };
+        }
+
+        await prisma.product.update({
+            where: { id },
+            data: { isFeatured: !product.isFeatured },
+        });
+
+        revalidateProducts();
+        return { success: true, isFeatured: !product.isFeatured };
+    } catch (error: any) {
+        console.error("Error toggling featured status:", error);
+        return { error: error.message || "Failed to toggle featured status" };
+    }
+}
+
+// Set featured status for a product (explicit value)
+export async function setFeaturedProduct(id: string, isFeatured: boolean) {
+    try {
+        await prisma.product.update({
+            where: { id },
+            data: { isFeatured },
+        });
+
+        revalidateProducts();
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error setting featured status:", error);
+        return { error: error.message || "Failed to set featured status" };
     }
 }

@@ -4,8 +4,13 @@ import { useDeviceDetect } from "@/lib/hooks/useDeviceDetect";
 import { MobileHeader } from "@/components/admin/mobile/MobileHeader";
 import { MobileProductForm } from "@/components/admin/mobile/MobileProductForm";
 import { ProductForm } from "@/components/admin/products/ProductForm";
+import { Product } from "@/lib/types";
 
-export default function NewProductPage() {
+interface EditProductContentProps {
+    product: Product;
+}
+
+export function EditProductContent({ product }: EditProductContentProps) {
     const { isMobile, isLoading } = useDeviceDetect();
 
     if (isLoading) {
@@ -19,9 +24,9 @@ export default function NewProductPage() {
     if (isMobile) {
         return (
             <div className="flex flex-col min-h-screen">
-                <MobileHeader title="Add Product" showBack backHref="/admin/products" />
+                <MobileHeader title="Edit Product" showBack backHref="/admin/products" />
                 <div className="flex-1 p-4">
-                    <MobileProductForm />
+                    <MobileProductForm initialData={product} />
                 </div>
             </div>
         );
@@ -30,9 +35,10 @@ export default function NewProductPage() {
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Add Product</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Edit Product</h2>
             </div>
-            <ProductForm />
+            <ProductForm initialData={product} />
         </div>
     );
 }
+

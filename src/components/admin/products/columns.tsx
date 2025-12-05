@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import {
     DropdownMenu,
@@ -13,10 +14,42 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { ArrowUpDown, MoreHorizontal, Star } from "lucide-react";
+import { useState, useTransition } from "react";
 import { ViewProductDialog } from "./view-product-dialog";
 import Link from "next/link";
+import { toggleFeaturedProduct } from "@/app/admin/products/product-actions";
+import { toast } from "sonner";
+
+// Featured toggle cell component
+function FeaturedToggle({ product }: { product: Product }) {
+    const [isPending, startTransition] = useTransition();
+    const [isFeatured, setIsFeatured] = useState(product.isFeatured ?? false);
+
+    const handleToggle = () => {
+        startTransition(async () => {
+            const result = await toggleFeaturedProduct(product.id);
+            if (result.error) {
+                toast.error(result.error);
+            } else {
+                setIsFeatured(result.isFeatured ?? false);
+                toast.success(result.isFeatured ? "Product featured" : "Product unfeatured");
+            }
+        });
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <Switch
+                checked={isFeatured}
+                onCheckedChange={handleToggle}
+                disabled={isPending}
+                className="data-[state=checked]:bg-amber-500"
+            />
+            {isFeatured && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
+        </div>
+    );
+}
 
 export const columns: ColumnDef<Product>[] = [
     {
@@ -107,6 +140,14 @@ export const columns: ColumnDef<Product>[] = [
             }).format(amount);
 
             return <div className="font-medium">{formatted}</div>;
+        },
+    },
+    {
+        id: "featured",
+        header: "Featured",
+        cell: ({ row }) => {
+            const product = row.original;
+            return <FeaturedToggle product={product} />;
         },
     },
     {

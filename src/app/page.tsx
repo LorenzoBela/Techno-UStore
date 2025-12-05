@@ -2,7 +2,7 @@ import { Hero } from "@/components/home/Hero";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
-import { getTopProductsByCategory } from "@/lib/products";
+import { getTopProductsByCategory, getFeaturedProducts } from "@/lib/products";
 import { Suspense } from "react";
 
 // Revalidate home page every 5 minutes for fresh products
@@ -20,6 +20,28 @@ function CategoryShowcaseSkeleton() {
       </div>
     </div>
   );
+}
+
+// Loading skeleton for featured section
+function FeaturedSectionSkeleton() {
+  return (
+    <div className="py-12 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="container">
+        <div className="h-8 w-56 bg-slate-700 animate-pulse rounded mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="aspect-4/5 bg-slate-800 animate-pulse rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Server component that fetches featured products
+async function FeaturedProducts() {
+  const products = await getFeaturedProducts(12); // Support up to 12 featured products
+  return <FeaturedSection products={products} />;
 }
 
 // Server component that fetches products
@@ -61,7 +83,9 @@ export default function Home() {
         />
       </Suspense>
 
-      <FeaturedSection />
+      <Suspense fallback={<FeaturedSectionSkeleton />}>
+        <FeaturedProducts />
+      </Suspense>
 
       <Suspense fallback={<CategoryShowcaseSkeleton />}>
         <CategoryProducts 

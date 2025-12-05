@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Menu, Store } from "lucide-react";
 import { UserNav } from "@/components/layout/UserNav";
+import { MobileNav } from "@/components/admin/mobile/MobileNav";
+import { useDeviceDetect } from "@/lib/hooks/useDeviceDetect";
 
 export default function AdminLayout({
     children,
@@ -16,11 +18,12 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const { user, isLoading } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const { isMobile, isLoading: deviceLoading } = useDeviceDetect();
 
     useEffect(() => {
-        if (isLoading) return;
+        if (authLoading) return;
 
         // Simple check for the cookie we set in login
         const hasAdminSession = document.cookie
@@ -35,12 +38,30 @@ export default function AdminLayout({
         } else {
             setIsAuthorized(true);
         }
-    }, [router, user, isLoading]);
+    }, [router, user, authLoading]);
 
-    if (!isAuthorized) {
-        return null; // or a loading spinner
+    // Show loading state while checking auth or device
+    if (!isAuthorized || deviceLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        );
     }
 
+    // Mobile Layout
+    if (isMobile) {
+        return (
+            <div className="flex min-h-screen flex-col bg-background">
+                <main className="flex-1 pb-20">
+                    {children}
+                </main>
+                <MobileNav />
+            </div>
+        );
+    }
+
+    // Desktop Layout
     return (
         <div className="flex min-h-screen flex-col space-y-6">
             <header className="sticky top-0 z-40 border-b bg-background">
