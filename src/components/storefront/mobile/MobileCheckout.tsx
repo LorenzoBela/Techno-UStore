@@ -7,14 +7,64 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Store, Wallet, LogIn, UserPlus, Loader2, ShoppingCart, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { createOrder } from "@/app/checkout/actions";
+import { GCashPaymentModal } from "@/components/checkout/GCashPaymentModal";
 
 export function MobileCheckout() {
     const { getSelectedCartItems, selectedTotal, selectedCount, selectedItems } = useCart();
     const { user, isLoading: authLoading } = useAuth();
     const [showItems, setShowItems] = useState(false);
 
+    // Form State
+    const [formData, setFormData] = useState({
+        firstName: user?.user_metadata?.name?.split(" ")[0] || "",
+        lastName: user?.user_metadata?.name?.split(" ").slice(1).join(" ") || "",
+        phone: user?.user_metadata?.phone || (user as any)?.phone || "",
+        email: user?.email || ""
+    });
+
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [orderData, setOrderData] = useState<{ id: string, amount: number } | null>(null);
+
     const checkoutItems = getSelectedCartItems();
     const total = selectedTotal;
+
+    const handleInputChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handlePlaceOrder = async () => {
+        if (!user) return;
+
+        if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email) {
+            toast.error("Please fill in all contact information");
+            return;
+        }
+
+        setIsPlacingOrder(true);
+
+        // Pass the IDs of the selected cart items
+        const itemIds = checkoutItems.map(item => item.id);
+
+        const result = await createOrder({
+            userId: user.id,
+            customerName: `${formData.firstName} ${formData.lastName}`,
+            customerPhone: formData.phone,
+            customerEmail: formData.email,
+            items: itemIds,
+        } as any);
+
+        setIsPlacingOrder(false);
+
+        if (result.success && result.orderId) {
+            setOrderData({ id: result.orderId, amount: result.amount || total });
+            setPaymentModalOpen(true);
+        } else {
+            toast.error(result.error || "Failed to place order");
+        }
+    };
 
     // Loading state
     if (authLoading) {
@@ -179,7 +229,8 @@ export function MobileCheckout() {
                                 <input
                                     className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                     placeholder="John"
-                                    defaultValue={user.user_metadata?.name?.split(" ")[0] || ""}
+                                    value={formData.firstName}
+                                    onChange={(e) => handleInputChange("firstName", e.target.value)}
                                 />
                             </div>
                             <div className="space-y-1">
@@ -187,7 +238,8 @@ export function MobileCheckout() {
                                 <input
                                     className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                     placeholder="Doe"
-                                    defaultValue={user.user_metadata?.name?.split(" ").slice(1).join(" ") || ""}
+                                    value={formData.lastName}
+                                    onChange={(e) => handleInputChange("lastName", e.target.value)}
                                 />
                             </div>
                         </div>
@@ -196,7 +248,8 @@ export function MobileCheckout() {
                             <input
                                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                 placeholder="0912 345 6789"
-                                defaultValue={user.user_metadata?.phone || user.phone || ""}
+                                value={formData.phone}
+                                onChange={(e) => handleInputChange("phone", e.target.value)}
                             />
                         </div>
                         <div className="space-y-1">
@@ -204,7 +257,8 @@ export function MobileCheckout() {
                             <input
                                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                 placeholder="john@example.com"
-                                defaultValue={user.email || ""}
+                                value={formData.email}
+                                onChange={(e) => handleInputChange("email", e.target.value)}
                             />
                         </div>
                     </div>
@@ -228,7 +282,7 @@ export function MobileCheckout() {
                         </div>
                         <div className="flex-1">
                             <p className="text-sm font-medium">GCash</p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                                 Upload proof of payment after placing order
                             </p>
                         </div>
@@ -242,11 +296,20 @@ export function MobileCheckout() {
                     <span className="text-sm text-muted-foreground">Total</span>
                     <span className="text-xl font-bold text-primary">₱{total.toFixed(2)}</span>
                 </div>
-                <Button className="w-full h-12 font-semibold text-base">
+                <Button className="w-full h-12 font-semibold text-base" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                    {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Place Order
                 </Button>
             </div>
+
+            {orderData && (
+                <GCashPaymentModal
+                    open={paymentModalOpen}
+                    onOpenChange={setPaymentModalOpen}
+                    orderId={orderData.id}
+                    amount={orderData.amount}
+                />
+            )}
         </div>
     );
 }
-

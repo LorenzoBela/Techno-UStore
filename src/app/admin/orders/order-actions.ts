@@ -29,18 +29,18 @@ function revalidateOrders() {
 
 // Paginated orders for admin - handles thousands of orders efficiently
 export async function getAdminOrders(
-    page: number = 1, 
+    page: number = 1,
     pageSize: number = 25,
     filters?: { status?: string; search?: string }
 ): Promise<PaginatedOrders> {
     try {
         const where: any = {};
-        
+
         // Status filter
         if (filters?.status && filters.status !== "all") {
             where.status = filters.status;
         }
-        
+
         // Search by customer name or email
         if (filters?.search && filters.search.trim()) {
             const searchTerm = filters.search.trim();
@@ -110,6 +110,7 @@ export async function getOrderById(id: string) {
                         referenceNumber: true,
                         proofImageUrl: true,
                         verifiedAt: true,
+                        rejectionReason: true,
                     },
                 },
                 items: {
@@ -138,8 +139,12 @@ export async function getOrderById(id: string) {
             version: (order as any).version ?? 1,
             paymentStatus: order.payment?.status || null,
             paymentId: order.payment?.id || null,
+            paymentProofUrl: order.payment?.proofImageUrl || null,
+            paymentRejectionReason: order.payment?.rejectionReason || null,
+            paymentVerifiedAt: order.payment?.verifiedAt?.toISOString() || null,
             notes: order.notes,
             date: order.createdAt.toISOString().split("T")[0],
+            scheduledPickupDate: order.scheduledPickupDate?.toISOString() || null,
             pickedUpAt: order.pickedUpAt?.toISOString() || null,
             items: order.items.map((item) => ({
                 id: item.id,
@@ -159,9 +164,10 @@ export async function getOrderById(id: string) {
 // Update order status with version-based optimistic locking
 // This prevents race conditions when multiple admins edit the same order
 export async function updateOrderStatus(
-    orderId: string, 
+    orderId: string,
     newStatus: "pending" | "awaiting_payment" | "ready_for_pickup" | "completed" | "cancelled",
-    expectedVersion?: number // Version-based locking for concurrent access
+    expectedVersion?: number, // Version-based locking for concurrent access
+    adminId?: string // Admin ID for logging who made the change
 ) {
     try {
         const result = await prisma.$transaction(async (tx) => {
@@ -169,44 +175,48 @@ export async function updateOrderStatus(
             const order = await tx.order.findUnique({
                 where: { id: orderId },
             });
-            
+
             if (!order) {
                 throw new Error("Order not found. It may have been deleted.");
             }
 
             const currentVersion = (order as any).version ?? 1;
-            
+
             // Version-based optimistic locking: ensure no other admin modified this order
             if (expectedVersion !== undefined && currentVersion !== expectedVersion) {
                 throw new Error(
                     `This order was modified by another admin. Current status: "${order.status}". Please refresh and try again.`
                 );
             }
-            
+
             // Update status and increment version atomically
-            // Note: version field will work after running prisma generate
-            const updateData: any = { 
+            const updateData: any = {
                 status: newStatus,
-                ...(newStatus === "completed" ? { pickedUpAt: new Date() } : {}),
+                version: { increment: 1 },
             };
-            
-            // Only increment version if the field exists in schema
-            try {
-                updateData.version = { increment: 1 };
-            } catch {
-                // Version field not yet in schema
+
+            // If marking as completed, log the pickup time and who completed it
+            if (newStatus === "completed") {
+                updateData.pickedUpAt = new Date();
+                if (adminId) {
+                    updateData.completedBy = adminId;
+                }
             }
-            
+
             const updated = await tx.order.update({
                 where: { id: orderId },
                 data: updateData,
             });
-            
+
             return updated;
         });
 
         revalidateOrders();
-        return { success: true, order: result, newVersion: (result as any).version ?? 1 };
+        return {
+            success: true,
+            newVersion: (result as any).version ?? 1,
+            status: result.status
+        };
     } catch (error: any) {
         console.error("Error updating order status:", error);
         return { error: error.message || "Failed to update order status" };
@@ -215,10 +225,11 @@ export async function updateOrderStatus(
 
 // Verify payment with concurrency check
 export async function verifyPayment(
-    orderId: string, 
-    adminId: string, 
+    orderId: string,
+    adminId: string,
     action: "verify" | "reject",
-    rejectionReason?: string
+    rejectionReason?: string,
+    pickupDate?: Date
 ) {
     try {
         await prisma.$transaction(async (tx) => {
@@ -226,20 +237,26 @@ export async function verifyPayment(
                 where: { id: orderId },
                 include: { payment: true },
             });
-            
+
             if (!order) {
                 throw new Error("Order not found.");
             }
-            
+
             if (!order.payment) {
                 throw new Error("No payment found for this order.");
             }
-            
-            // Check if already verified/rejected
-            if (order.payment.status !== "pending") {
-                throw new Error(`Payment has already been ${order.payment.status} by another admin.`);
+
+            // Check if already verified/rejected (optional: allow re-verify?)
+            // If rejected, user might re-upload (new status pending).
+            // So only block if currently Verified?
+            // "only if accepted they'll be notified... if rejected reason why"
+            // If rejected, status is rejected. If they reupload, status becomes pending.
+
+            if (order.payment.status === "verified" && action === "verify") {
+                // Idempotent success or error? Let's generic error.
+                throw new Error("Payment is already verified.");
             }
-            
+
             await tx.payment.update({
                 where: { id: order.payment.id },
                 data: {
@@ -249,12 +266,27 @@ export async function verifyPayment(
                     rejectionReason: action === "reject" ? rejectionReason : null,
                 },
             });
-            
+
             // Update order status based on payment verification
             if (action === "verify") {
                 await tx.order.update({
                     where: { id: orderId },
-                    data: { status: "ready_for_pickup" },
+                    data: {
+                        status: "ready_for_pickup",
+                        scheduledPickupDate: pickupDate
+                    },
+                });
+            } else if (action === "reject") {
+                // Return to awaiting_payment so user can try again? or cancelled?
+                // "if rejected... notified on their dash... the reason why"
+                // Probably keep as pending or set to awaiting_payment.
+                // Let's set to awaiting_payment to indicate they need to pay (upload) again.
+                // Or maybe a specific "payment_rejected" status? 
+                // Creating a custom status might be hard due to Enum.
+                // Let's use 'awaiting_payment' again.
+                await tx.order.update({
+                    where: { id: orderId },
+                    data: { status: "awaiting_payment" }
                 });
             }
         });

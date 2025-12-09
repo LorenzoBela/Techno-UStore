@@ -142,7 +142,9 @@ model Order {
   items         OrderItem[]
   payment       Payment?
   notes         String? // Customer notes or special instructions
+  scheduledPickupDate DateTime? // Admin set pickup date
   pickedUpAt    DateTime? // When customer actually picked up
+  completedBy   String? // Admin user ID who marked as complete
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   version       Int         @default(1) // Optimistic locking for concurrent admin access
@@ -161,7 +163,7 @@ model Payment {
   order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount          Decimal
   referenceNumber String? // GCash reference number from the receipt
-  proofImageUrl   String // URL to the uploaded GCash proof of payment screenshot
+  proofImageUrl   String? // URL to the uploaded GCash proof of payment screenshot (optional until uploaded)
   status          PaymentStatus @default(pending)
   rejectionReason String? // Reason if payment is rejected
   verifiedBy      String? // Admin user ID who verified

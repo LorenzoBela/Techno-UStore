@@ -18,7 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, CheckCircle2, Clock, Loader2, Package, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Loader2, Package, CreditCard, AlertCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -84,17 +84,32 @@ export default function OrderDetailsPage() {
         );
     }
 
+    // Helper to format timestamps
+    const formatTime = (isoString: string | null | undefined) => {
+        if (!isoString) return null;
+        const date = new Date(isoString);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
     const steps = [
-        { label: "Placed", icon: Clock, status: "pending" },
-        { label: "Payment", icon: CreditCard, status: "awaiting_payment" },
-        { label: "Ready", icon: Package, status: "ready_for_pickup" },
-        { label: "Completed", icon: CheckCircle2, status: "completed" },
+        { label: "Order Placed", icon: Clock, status: "pending", time: formatTime(order.createdAt) },
+        { label: "Payment Submitted", icon: CreditCard, status: "awaiting_payment", time: formatTime(order.paymentUploadedAt) },
+        { label: "Ready for Pickup", icon: Package, status: "ready_for_pickup", time: formatTime(order.paymentVerifiedAt) },
+        { label: "Completed", icon: CheckCircle2, status: "completed", time: formatTime(order.pickedUpAt) },
     ];
 
     // Determine current step based on order status
     const statusToStep: Record<string, number> = {
+        "Pending Approval": 1,  // After payment uploaded, under review
+        "Under Review": 1,
         "Pending": 0,
-        "Awaiting Payment": 1,
+        "Awaiting Payment": 0,
         "Ready for Pickup": 2,
         "Completed": 3,
         "Cancelled": -1,
@@ -115,6 +130,33 @@ export default function OrderDetailsPage() {
                         Placed on {order.date} • <span className="font-mono text-xs">{order.id.substring(0, 8)}...</span>
                     </p>
                 </div>
+            </div>
+
+            <div className="space-y-6 mb-8">
+                {/* Rejection Notice */}
+                {order.paymentRejectionReason && order.status === "Awaiting Payment" && (
+                    <div className="rounded-lg bg-destructive/10 p-4 text-destructive border border-destructive/20 flex gap-3 items-start">
+                        <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                        <div>
+                            <h4 className="font-semibold">Payment Rejected</h4>
+                            <p className="text-sm opacity-90">{order.paymentRejectionReason}</p>
+                            <p className="text-xs mt-2 opacity-75">Please upload a valid proof of payment again.</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pickup Date Notice */}
+                {order.scheduledPickupDate && (
+                    <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-4 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800 flex gap-3 items-start">
+                        <Calendar className="h-5 w-5 mt-0.5 shrink-0" />
+                        <div>
+                            <h4 className="font-semibold">Ready for Pickup</h4>
+                            <p className="text-sm opacity-90">
+                                Your order is scheduled for pickup on <strong>{new Date(order.scheduledPickupDate).toLocaleDateString()}</strong>.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -150,12 +192,19 @@ export default function OrderDetailsPage() {
                                                 >
                                                     <Icon className="h-4 w-4" />
                                                 </div>
-                                                <span className={cn(
-                                                    "text-xs font-medium",
-                                                    isCompleted ? "text-foreground" : "text-muted-foreground"
-                                                )}>
-                                                    {step.label}
-                                                </span>
+                                                <div className="text-center">
+                                                    <span className={cn(
+                                                        "text-xs font-medium block",
+                                                        isCompleted ? "text-foreground" : "text-muted-foreground"
+                                                    )}>
+                                                        {step.label}
+                                                    </span>
+                                                    {step.time && isCompleted && (
+                                                        <span className="text-[10px] text-muted-foreground block">
+                                                            {step.time}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}

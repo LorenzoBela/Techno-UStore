@@ -3,13 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingCart, Settings, Users, FolderTree } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Settings, Users, FolderTree, BarChart3 } from "lucide-react";
 
 const sidebarItems = [
     {
         title: "Dashboard",
         href: "/admin",
         icon: LayoutDashboard,
+        exact: true,
+    },
+    {
+        title: "Reports",
+        href: "/admin/reports",
+        icon: BarChart3,
         exact: true,
     },
     {
@@ -34,7 +40,18 @@ const sidebarItems = [
         title: "Orders",
         href: "/admin/orders",
         icon: ShoppingCart,
-        exact: false,
+        children: [
+            {
+                title: "All Orders",
+                href: "/admin/orders",
+                exact: true,
+            },
+            {
+                title: "Pickup Calendar",
+                href: "/admin/orders/pickup-calendar",
+                exact: true,
+            },
+        ],
     },
     {
         title: "Users",

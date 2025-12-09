@@ -21,6 +21,13 @@ export interface OrderDetails {
     notes: string | null;
     paymentMethod: string;
     paymentStatus: string | null;
+    scheduledPickupDate?: string | null;
+    paymentRejectionReason?: string | null;
+    // Timeline timestamps
+    createdAt: string;
+    paymentUploadedAt?: string | null;
+    paymentVerifiedAt?: string | null;
+    pickedUpAt?: string | null;
     items: {
         id: string;
         name: string;
@@ -89,6 +96,13 @@ export async function getOrderDetails(orderId: string, userId: string): Promise<
             notes: order.notes,
             paymentMethod: order.payment ? "GCash" : "Pending",
             paymentStatus: order.payment?.status || null,
+            scheduledPickupDate: (order as any).scheduledPickupDate?.toISOString() || null,
+            paymentRejectionReason: order.payment?.rejectionReason || null,
+            // Timeline timestamps
+            createdAt: order.createdAt.toISOString(),
+            paymentUploadedAt: order.payment?.createdAt?.toISOString() || null,
+            paymentVerifiedAt: order.payment?.verifiedAt?.toISOString() || null,
+            pickedUpAt: (order as any).pickedUpAt?.toISOString() || null,
             items: order.items.map((item) => ({
                 id: item.id,
                 name: item.product.name,
@@ -105,9 +119,9 @@ export async function getOrderDetails(orderId: string, userId: string): Promise<
 
 function formatStatus(status: string): string {
     const statusMap: Record<string, string> = {
-        pending: "Pending",
-        awaiting_payment: "Awaiting Payment",
-        ready_for_pickup: "Ready for Pickup",
+        pending: "Pending Approval",  // After payment proof uploaded, awaiting admin verification
+        awaiting_payment: "Awaiting Payment",  // Order placed, waiting for payment proof
+        ready_for_pickup: "Ready for Pickup",  // Admin approved, customer can pick up
         completed: "Completed",
         cancelled: "Cancelled",
     };

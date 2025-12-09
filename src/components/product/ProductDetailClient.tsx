@@ -2,8 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import Image from "next/image";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -22,6 +28,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     );
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [manualImageSelection, setManualImageSelection] = useState(false);
+    const [isZoomOpen, setIsZoomOpen] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
 
     const isWishlisted = isInWishlist(product.id);
 
@@ -144,7 +152,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             category: product.category,
             subcategory: product.subcategory,
         });
-        
+
         if (isWishlisted) {
             toast.success("Removed from wishlist");
         } else {
@@ -159,15 +167,23 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
                 {/* Product Image Section with Carousel */}
                 <div className="space-y-4">
-                    <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                    <div
+                        className="relative aspect-square overflow-hidden rounded-lg bg-muted cursor-zoom-in group"
+                        onClick={() => setIsZoomOpen(true)}
+                    >
                         {displayImage ? (
-                            <Image
-                                src={displayImage}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
+                            <>
+                                <Image
+                                    src={displayImage}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    priority
+                                />
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-full p-2 text-white pointer-events-none">
+                                    <Maximize2 className="h-5 w-5" />
+                                </div>
+                            </>
                         ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                                 <span className="text-2xl font-semibold">No Image Available</span>
@@ -180,16 +196,22 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <Button
                                     variant="secondary"
                                     size="icon"
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full opacity-80 hover:opacity-100"
-                                    onClick={handlePrevImage}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full opacity-80 hover:opacity-100 z-10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePrevImage();
+                                    }}
                                 >
                                     <ChevronLeft className="h-6 w-6" />
                                 </Button>
                                 <Button
                                     variant="secondary"
                                     size="icon"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full opacity-80 hover:opacity-100"
-                                    onClick={handleNextImage}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full opacity-80 hover:opacity-100 z-10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNextImage();
+                                    }}
                                 >
                                     <ChevronRight className="h-6 w-6" />
                                 </Button>
@@ -220,6 +242,122 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         </div>
                     )}
                 </div>
+
+                <Dialog open={isZoomOpen} onOpenChange={(open) => {
+                    setIsZoomOpen(open);
+                    if (!open) setZoomLevel(1);
+                }}>
+                    <DialogContent className="w-[95vw] h-[85vh] max-w-6xl p-0 border-none bg-zinc-900 overflow-hidden [&>button]:hidden">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>Zoom Image</DialogTitle>
+                        </DialogHeader>
+
+                        <div className="flex h-full">
+                            {/* Image Area - Scrollable when zoomed */}
+                            <div className="flex-1 relative bg-zinc-950 overflow-auto">
+                                {/* Custom Close Button */}
+                                <button
+                                    onClick={() => setIsZoomOpen(false)}
+                                    className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white flex items-center justify-center transition-colors border border-zinc-600"
+                                >
+                                    <span className="text-xl font-light">×</span>
+                                </button>
+
+                                <div
+                                    className="flex items-center justify-center p-4"
+                                    style={{
+                                        width: zoomLevel > 1 ? `${zoomLevel * 100}%` : '100%',
+                                        height: zoomLevel > 1 ? `${zoomLevel * 100}%` : '100%',
+                                        minWidth: '100%',
+                                        minHeight: '100%',
+                                    }}
+                                >
+                                    {displayImage && (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                        <img
+                                            src={displayImage}
+                                            alt={product.name}
+                                            style={{
+                                                width: zoomLevel > 1 ? `${zoomLevel * 100}%` : 'auto',
+                                                height: zoomLevel > 1 ? `${zoomLevel * 100}%` : 'auto',
+                                                maxWidth: zoomLevel > 1 ? 'none' : '100%',
+                                                maxHeight: zoomLevel > 1 ? 'none' : '100%',
+                                                objectFit: 'contain',
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right Sidebar - Controls */}
+                            <div className="w-20 md:w-24 bg-zinc-800 border-l border-zinc-700 flex flex-col items-center justify-start gap-4 py-4 overflow-y-auto shrink-0">
+                                {/* Image Counter */}
+                                {allImages.length > 1 && (
+                                    <div className="text-center font-medium text-white">
+                                        <span className="text-lg">{currentImageIndex + 1}</span>
+                                        <span> / {allImages.length}</span>
+                                    </div>
+                                )}
+
+                                {/* Navigation Buttons */}
+                                {allImages.length > 1 && (
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="icon"
+                                            className="h-11 w-11 rounded-full bg-zinc-700 hover:bg-zinc-600 text-white border border-zinc-600"
+                                            onClick={() => {
+                                                setZoomLevel(1);
+                                                handlePrevImage();
+                                            }}
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="icon"
+                                            className="h-11 w-11 rounded-full bg-zinc-700 hover:bg-zinc-600 text-white border border-zinc-600"
+                                            onClick={() => {
+                                                setZoomLevel(1);
+                                                handleNextImage();
+                                            }}
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Divider */}
+                                <div className="w-10 h-px bg-zinc-600 shrink-0" />
+
+                                {/* Zoom Controls */}
+                                <div className="flex flex-col items-center gap-2">
+                                    <Button
+                                        variant="secondary"
+                                        size="icon"
+                                        className="h-11 w-11 rounded-full bg-zinc-700 hover:bg-zinc-600 text-white border border-zinc-600"
+                                        onClick={() => setZoomLevel(z => Math.min(3, z + 0.5))}
+                                        disabled={zoomLevel >= 3}
+                                    >
+                                        <ZoomIn className="h-5 w-5" />
+                                    </Button>
+                                    <span className="text-white text-xs font-semibold tabular-nums py-1">
+                                        {Math.round(zoomLevel * 100)}%
+                                    </span>
+                                    <Button
+                                        variant="secondary"
+                                        size="icon"
+                                        className="h-11 w-11 rounded-full bg-zinc-700 hover:bg-zinc-600 text-white border border-zinc-600"
+                                        onClick={() => setZoomLevel(z => Math.max(1, z - 0.5))}
+                                        disabled={zoomLevel <= 1}
+                                    >
+                                        <ZoomOut className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Product Details Section */}
                 <div className="flex flex-col gap-6">
@@ -333,7 +471,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     ) : (
                         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/50 p-4">
                             <p className="text-sm text-amber-800 dark:text-amber-200">
-                                <span className="font-medium">Note:</span> This product has no size/color variants available. 
+                                <span className="font-medium">Note:</span> This product has no size/color variants available.
                                 It will be added to cart as a standard item.
                             </p>
                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
@@ -353,9 +491,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             <ShoppingCart className="h-5 w-5" />
                             {inStock ? "Add to Cart" : "Out of Stock"}
                         </Button>
-                        <Button 
-                            size="lg" 
-                            variant="outline" 
+                        <Button
+                            size="lg"
+                            variant="outline"
                             className="gap-2"
                             onClick={handleToggleWishlist}
                         >
@@ -374,8 +512,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {inStock ? `In Stock (${currentStock} available)` : "Out of Stock"}
                         </p>
                         <p className="mt-2">
-                            <span className="font-semibold text-foreground">Shipping:</span>{" "}
-                            Standard shipping rates apply. Free shipping on orders over ₱1000.
+                            <span className="font-semibold text-foreground">Pickup:</span>{" "}
+                            Available at Adamson UStore during store hours (Mon-Fri: 8:00 AM - 5:00 PM, Sat: 8:00 AM - 12:00 PM).
                         </p>
                     </div>
                 </div>

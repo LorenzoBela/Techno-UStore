@@ -74,7 +74,7 @@ export default function OrdersPage() {
         .slice(0, 2);
 
     const activeOrders = orders.filter(
-        (order) => ["Pending", "Awaiting Payment", "Ready for Pickup"].includes(order.status)
+        (order) => ["Pending Approval", "Awaiting Payment", "Ready for Pickup"].includes(order.status)
     );
     const historyOrders = orders.filter(
         (order) => ["Completed", "Cancelled"].includes(order.status)

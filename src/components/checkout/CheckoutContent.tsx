@@ -8,14 +8,66 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Store, Wallet, LogIn, UserPlus, Loader2, ShoppingCart } from "lucide-react";
 import { MobileCheckout, ResponsiveStorePage } from "@/components/storefront/mobile";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createOrder } from "@/app/checkout/actions";
+import { GCashPaymentModal } from "./GCashPaymentModal";
 
 function DesktopCheckout() {
     const { getSelectedCartItems, selectedTotal, selectedCount, selectedItems } = useCart();
     const { user, isLoading: authLoading } = useAuth();
 
+    // State for form
+    const [formData, setFormData] = useState({
+        firstName: user?.user_metadata?.name?.split(" ")[0] || "",
+        lastName: user?.user_metadata?.name?.split(" ").slice(1).join(" ") || "",
+        phone: user?.user_metadata?.phone || (user as any)?.phone || "",
+        email: user?.email || ""
+    });
+
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [orderData, setOrderData] = useState<{ id: string, amount: number } | null>(null);
+
     const checkoutItems = getSelectedCartItems();
     const subtotal = selectedTotal;
     const total = subtotal;
+
+    const handleInputChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handlePlaceOrder = async () => {
+        if (!user) return;
+
+        if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email) {
+            toast.error("Please fill in all contact information");
+            return;
+        }
+
+        setIsPlacingOrder(true);
+
+        // Pass the IDs of the selected cart items
+        const itemIds = checkoutItems.map(item => item.id);
+
+        const result = await createOrder({
+            userId: user.id,
+            customerName: `${formData.firstName} ${formData.lastName}`,
+            customerPhone: formData.phone,
+            customerEmail: formData.email,
+            items: itemIds,
+            // totalAmount is calculated on server, but we could pass it to verify. Server logic prevails.
+        } as any); // Type cast if needed depending on stricter types
+
+        setIsPlacingOrder(false);
+
+        if (result.success && result.orderId) {
+            setOrderData({ id: result.orderId, amount: result.amount || total });
+            setPaymentModalOpen(true);
+        } else {
+            toast.error(result.error || "Failed to place order");
+        }
+    };
 
     // Show loading state while auth is loading
     if (authLoading) {
@@ -106,35 +158,39 @@ function DesktopCheckout() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">First Name</label>
-                                    <input 
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" 
+                                    <input
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                         placeholder="John"
-                                        defaultValue={user.user_metadata?.name?.split(" ")[0] || ""}
+                                        value={formData.firstName}
+                                        onChange={(e) => handleInputChange("firstName", e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Last Name</label>
-                                    <input 
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" 
+                                    <input
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                         placeholder="Doe"
-                                        defaultValue={user.user_metadata?.name?.split(" ").slice(1).join(" ") || ""}
+                                        value={formData.lastName}
+                                        onChange={(e) => handleInputChange("lastName", e.target.value)}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Phone Number</label>
-                                <input 
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" 
+                                <input
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                     placeholder="0912 345 6789"
-                                    defaultValue={user.user_metadata?.phone || user.phone || ""}
+                                    value={formData.phone}
+                                    onChange={(e) => handleInputChange("phone", e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Email Address</label>
-                                <input 
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" 
+                                <input
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                     placeholder="john.doe@example.com"
-                                    defaultValue={user.email || ""}
+                                    value={formData.email}
+                                    onChange={(e) => handleInputChange("email", e.target.value)}
                                 />
                             </div>
                         </div>
@@ -228,12 +284,24 @@ function DesktopCheckout() {
                                     <span>Total</span>
                                     <span className="text-primary">₱{total.toFixed(2)}</span>
                                 </div>
-                                <Button className="w-full mt-4">Place Order</Button>
+                                <Button className="w-full mt-4" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                                    {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Place Order
+                                </Button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {orderData && (
+                <GCashPaymentModal
+                    open={paymentModalOpen}
+                    onOpenChange={setPaymentModalOpen}
+                    orderId={orderData.id}
+                    amount={orderData.amount}
+                />
+            )}
         </div>
     );
 }
@@ -241,9 +309,8 @@ function DesktopCheckout() {
 export function CheckoutContent() {
     return (
         <ResponsiveStorePage
-            mobileContent={<MobileCheckout />}
+            mobileContent={<MobileCheckout />} // Mobile needs update too!
             desktopContent={<DesktopCheckout />}
         />
     );
 }
-

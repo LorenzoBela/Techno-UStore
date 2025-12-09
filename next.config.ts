@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Optimize package imports
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    // Increase body size limit for server actions (file uploads)
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   // Headers for better caching
   async headers() {
