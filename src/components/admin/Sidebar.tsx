@@ -65,6 +65,12 @@ const sidebarItems = [
         icon: Settings,
         exact: false,
     },
+    {
+        title: "System Logs",
+        href: "/admin/logs",
+        icon: FolderTree,
+        exact: true,
+    },
 ];
 
 export function Sidebar() {

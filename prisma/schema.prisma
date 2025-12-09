@@ -37,6 +37,7 @@ model User {
   orders    Order[]
   cart      Cart?
   wishlist  Wishlist?
+  systemLogs SystemLog[]
 
   @@index([role]) // For admin user lookups
   @@index([createdAt(sort: Desc)]) // For recent users
@@ -261,7 +262,23 @@ model WishlistItem {
   subcategory String?
   createdAt  DateTime @default(now())
 
-  @@unique([wishlistId, productId]) // Prevent duplicate products in wishlist
   @@index([wishlistId])
   @@index([productId])
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  action    String   // e.g., "ORDER_CREATED", "ORDER_UPDATED", "PAYMENT_VERIFIED"
+  entityId  String?  // ID of the affected entity (Order info, Product ID, etc.)
+  entityType String? // "Order", "Product", "Payment"
+  details   String?  // Descriptive text or JSON
+  userId    String?  // User/Admin who performed the action
+  user      User?    @relation(fields: [userId], references: [id])
+  userEmail String?  // Snapshot of email in case user is deleted
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+  @@index([userId])
 }

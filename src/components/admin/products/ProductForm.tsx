@@ -21,6 +21,7 @@ import {
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { createProduct, updateProduct, uploadProductImage, getCategories } from "@/app/admin/products/product-actions";
 import { getSubcategoriesByCategoryName } from "@/app/admin/products/categories/category-actions";
 import { X, Plus, Trash2, Loader2, Star } from "lucide-react";
@@ -52,6 +53,7 @@ interface SubcategoryOption {
 
 export function ProductForm({ initialData }: ProductFormProps) {
     const router = useRouter();
+    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
 
     // Category and subcategory options from database
@@ -91,7 +93,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             const subs = await getSubcategoriesByCategoryName(category);
             setSubcategories(subs);
             setLoadingSubcategories(false);
-            
+
             // Clear subcategory if it's not in the new list
             if (subcategory && !subs.find(s => s.name === subcategory)) {
                 setSubcategory("");
@@ -225,9 +227,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
             let result;
             if (initialData) {
-                result = await updateProduct(initialData.id, productData);
+                result = await updateProduct(initialData.id, {
+                    ...productData,
+                    adminId: user?.id,
+                    adminEmail: user?.email || undefined,
+                });
             } else {
-                result = await createProduct(productData);
+                result = await createProduct({
+                    ...productData,
+                    adminId: user?.id,
+                    adminEmail: user?.email || undefined,
+                });
             }
 
             if (result.error) {
@@ -319,8 +329,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     {category && (
                         <div className="grid gap-2">
                             <Label>Subcategory</Label>
-                            <Select 
-                                value={subcategory} 
+                            <Select
+                                value={subcategory}
                                 onValueChange={setSubcategory}
                                 disabled={loadingSubcategories}
                             >

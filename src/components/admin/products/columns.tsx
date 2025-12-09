@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ArrowUpDown, MoreHorizontal, Star } from "lucide-react";
 import { useState, useTransition } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { ViewProductDialog } from "./view-product-dialog";
 import Link from "next/link";
-import { toggleFeaturedProduct } from "@/app/admin/products/product-actions";
+import { toggleFeaturedProduct, deleteProduct } from "@/app/admin/products/product-actions";
 import { toast } from "sonner";
 
 // Featured toggle cell component
@@ -155,6 +156,7 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const product = row.original;
             const [showViewDialog, setShowViewDialog] = useState(false);
+            const { user } = useAuth();
 
             return (
                 <>
@@ -186,7 +188,21 @@ export const columns: ColumnDef<Product>[] = [
                                     Edit product
                                 </DropdownMenuItem>
                             </Link>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => {
+                                    if (confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
+                                        toast.promise(deleteProduct(product.id, user?.id, user?.email || undefined), {
+                                            loading: "Deleting product...",
+                                            success: (data) => {
+                                                if (data.error) throw new Error(data.error);
+                                                return "Product deleted successfully";
+                                            },
+                                            error: (err) => err.message || "Failed to delete product"
+                                        });
+                                    }
+                                }}
+                            >
                                 Delete product
                             </DropdownMenuItem>
                         </DropdownMenuContent>

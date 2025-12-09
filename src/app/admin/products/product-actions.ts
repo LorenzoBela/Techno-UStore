@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { createSystemLog, getServerAdmin } from "@/lib/logger";
 
 // Helper to revalidate all product-related caches
 function revalidateProducts() {
@@ -58,7 +59,7 @@ export async function uploadProductImage(formData: FormData) {
 // Batch upload multiple images at once (more efficient for products with multiple images)
 export async function uploadProductImages(formData: FormData) {
     const files = formData.getAll("files") as File[];
-    
+
     if (files.length === 0) {
         return { error: "No files uploaded", urls: [] };
     }
@@ -105,7 +106,7 @@ export async function uploadProductImages(formData: FormData) {
     });
 
     const uploadResults = await Promise.all(uploadPromises);
-    
+
     for (const url of uploadResults) {
         if (url) results.push(url);
     }
@@ -114,9 +115,9 @@ export async function uploadProductImages(formData: FormData) {
         return { error: errors.join(", "), urls: [] };
     }
 
-    return { 
-        urls: results, 
-        error: errors.length > 0 ? `Some uploads failed: ${errors.join(", ")}` : undefined 
+    return {
+        urls: results,
+        error: errors.length > 0 ? `Some uploads failed: ${errors.join(", ")}` : undefined
     };
 }
 
@@ -130,6 +131,8 @@ interface CreateProductData {
     isFeatured?: boolean;
     images: string[];
     variants: { name: string; size: string; color: string; stock: number; imageUrl?: string }[];
+    adminId?: string;
+    adminEmail?: string;
 }
 
 export async function createProduct(data: CreateProductData) {
@@ -186,6 +189,16 @@ export async function createProduct(data: CreateProductData) {
         });
 
         revalidateProducts();
+
+        const admin = await getServerAdmin();
+        await createSystemLog({
+            action: "PRODUCT_CREATED",
+            entityType: "Product",
+            details: `Product created: ${data.name}`,
+            userId: data.adminId || admin?.id,
+            userEmail: data.adminEmail || admin?.email,
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error("Error creating product:", error);
@@ -198,7 +211,7 @@ export async function createProduct(data: CreateProductData) {
 }
 
 export async function updateProduct(
-    id: string, 
+    id: string,
     data: {
         name: string;
         description: string;
@@ -209,6 +222,8 @@ export async function updateProduct(
         isFeatured?: boolean;
         images: string[];
         variants?: { name?: string; size: string; color?: string; stock: number; imageUrl?: string }[];
+        adminId?: string;
+        adminEmail?: string;
     },
     expectedUpdatedAt?: string // For optimistic locking - pass the updatedAt from when product was loaded
 ) {
@@ -220,7 +235,7 @@ export async function updateProduct(
                 where: { id },
                 select: { id: true, updatedAt: true },
             });
-            
+
             if (!existingProduct) {
                 throw new Error("Product not found. It may have been deleted by another admin.");
             }
@@ -291,6 +306,17 @@ export async function updateProduct(
         revalidateProducts();
         // Also revalidate the specific product page
         revalidatePath(`/product/${id}`);
+
+        const admin = await getServerAdmin();
+        await createSystemLog({
+            action: "PRODUCT_UPDATED",
+            entityId: id,
+            entityType: "Product",
+            details: `Product updated: ${data.name}`,
+            userId: data.adminId || admin?.id,
+            userEmail: data.adminEmail || admin?.email,
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error("Error updating product:", error);
@@ -316,8 +342,8 @@ export interface PaginatedProducts {
 
 // Optimized products fetch with proper pagination for 2K+ products
 export async function getProducts(
-    page = 1, 
-    pageSize = 25, 
+    page = 1,
+    pageSize = 25,
     filters?: ProductFilters
 ): Promise<PaginatedProducts> {
     try {
@@ -406,8 +432,8 @@ export async function getProducts(
             isNew: (Date.now() - new Date(p.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000
         }));
 
-        return { 
-            products: transformedProducts, 
+        return {
+            products: transformedProducts,
             count,
             page,
             pageSize,
@@ -459,7 +485,7 @@ export async function getProduct(id: string) {
 }
 
 // Delete product with proper cleanup
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, adminId?: string, adminEmail?: string) {
     try {
         await prisma.$transaction(async (tx) => {
             // Check if product exists
@@ -467,7 +493,7 @@ export async function deleteProduct(id: string) {
                 where: { id },
                 include: { images: true },
             });
-            
+
             if (!product) {
                 throw new Error("Product not found. It may have already been deleted.");
             }
@@ -479,6 +505,17 @@ export async function deleteProduct(id: string) {
         });
 
         revalidateProducts();
+
+        const admin = await getServerAdmin();
+        await createSystemLog({
+            action: "PRODUCT_DELETED",
+            entityId: id,
+            entityType: "Product",
+            details: `Product deleted`,
+            userId: adminId || admin?.id,
+            userEmail: adminEmail || admin?.email,
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error("Error deleting product:", error);

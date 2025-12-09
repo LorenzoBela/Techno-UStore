@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { createSystemLog, getServerAdmin } from "@/lib/logger";
 
 export interface AdminOrder {
     id: string;
@@ -211,6 +212,17 @@ export async function updateOrderStatus(
             return updated;
         });
 
+        // Log the action (outside transaction to not block it)
+        await createSystemLog({
+            action: newStatus === 'completed' ? 'ORDER_COMPLETED' :
+                newStatus === 'cancelled' ? 'ORDER_CANCELLED' : 'ORDER_UPDATED',
+            entityId: orderId,
+            entityType: 'Order',
+            details: `Status changed to ${newStatus}`,
+            userId: adminId,
+            userEmail: adminId ? undefined : 'unknown',
+        });
+
         revalidateOrders();
         return {
             success: true,
@@ -289,6 +301,15 @@ export async function verifyPayment(
                     data: { status: "awaiting_payment" }
                 });
             }
+        });
+
+        // Log the action
+        await createSystemLog({
+            action: action === "verify" ? "PAYMENT_VERIFIED" : "PAYMENT_REJECTED",
+            entityId: orderId,
+            entityType: 'Order',
+            details: action === "reject" ? `Payment rejected. Reason: ${rejectionReason}` : "Payment verified and order accepted",
+            userId: adminId,
         });
 
         revalidateOrders();
