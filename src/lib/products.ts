@@ -105,11 +105,7 @@ export async function getProductsByCategory(
         if (filters?.sort === 'price-desc') orderBy = { price: "desc" };
         if (filters?.sort === 'newest') orderBy = { createdAt: "desc" };
 
-        // Pagination for large categories
-        const page = filters?.page || 1;
-        const pageSize = limit || filters?.limit || 12; // 12 products per page (4x3 grid)
-        const skip = (page - 1) * pageSize;
-
+        // Only apply pagination if limit is explicitly set
         const products = await prisma.product.findMany({
             where,
             select: {
@@ -125,8 +121,7 @@ export async function getProductsByCategory(
                 variants: { select: { name: true, size: true, color: true, stock: true, imageUrl: true } },
             },
             orderBy,
-            skip,
-            take: pageSize,
+            ...(limit ? { take: limit } : {}), // Only limit if explicitly requested (for homepage showcases)
         });
 
         return products.map(transformProduct);

@@ -25,10 +25,10 @@ interface ProductGridProps {
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
-export function ProductGrid({ 
-    products, 
-    initialPageSize = 24,
-    enablePagination = true 
+export function ProductGrid({
+    products,
+    initialPageSize = 12,
+    enablePagination = true
 }: ProductGridProps) {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
@@ -44,11 +44,11 @@ export function ProductGrid({
                 endIndex: products.length,
             };
         }
-        
+
         const total = Math.ceil(products.length / pageSize);
         const start = (currentPage - 1) * pageSize;
         const end = Math.min(start + pageSize, products.length);
-        
+
         return {
             paginatedProducts: products.slice(start, end),
             totalPages: total,
@@ -73,7 +73,7 @@ export function ProductGrid({
             {/* View Toggle Header */}
             <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
                 <p className="text-sm text-muted-foreground">
-                    {enablePagination && products.length > pageSize 
+                    {enablePagination && products.length > pageSize
                         ? `Showing ${startIndex + 1}-${endIndex} of ${products.length} products`
                         : `${products.length} product${products.length !== 1 ? "s" : ""} found`
                     }
@@ -160,7 +160,7 @@ export function ProductGrid({
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    
+
                     {/* Page numbers */}
                     <div className="flex items-center gap-1">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -174,7 +174,7 @@ export function ProductGrid({
                             } else {
                                 pageNum = currentPage - 2 + i;
                             }
-                            
+
                             return (
                                 <Button
                                     key={pageNum}
