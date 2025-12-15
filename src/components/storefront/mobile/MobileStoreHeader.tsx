@@ -10,6 +10,7 @@ import { useCategories } from "@/lib/categories-context";
 import { SearchBar } from "@/components/ui/search-bar";
 import { cn } from "@/lib/utils";
 import { UserNav } from "@/components/layout/UserNav";
+import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 
 export function MobileStoreHeader() {
     const [open, setOpen] = React.useState(false);
@@ -34,7 +35,7 @@ export function MobileStoreHeader() {
                     </SheetTrigger>
                     <SheetContent side="left" className="w-[85vw] max-w-[320px] p-0">
                         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                        
+
                         {/* Header */}
                         <div className="flex items-center p-4 border-b">
                             <Link
@@ -59,8 +60,8 @@ export function MobileStoreHeader() {
                                 onClick={() => setOpen(false)}
                                 className={cn(
                                     "flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors",
-                                    pathname === "/" 
-                                        ? "bg-primary/10 text-primary border-l-4 border-primary" 
+                                    pathname === "/"
+                                        ? "bg-primary/10 text-primary border-l-4 border-primary"
                                         : "hover:bg-muted"
                                 )}
                             >
@@ -84,8 +85,8 @@ export function MobileStoreHeader() {
                                         onClick={() => setOpen(false)}
                                         className={cn(
                                             "flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors",
-                                            isActive 
-                                                ? "bg-primary/10 text-primary border-l-4 border-primary" 
+                                            isActive
+                                                ? "bg-primary/10 text-primary border-l-4 border-primary"
                                                 : "hover:bg-muted"
                                         )}
                                     >
@@ -101,7 +102,7 @@ export function MobileStoreHeader() {
                                     Quick Links
                                 </span>
                             </div>
-                            
+
                             <Link
                                 href="/orders"
                                 onClick={() => setOpen(false)}
@@ -115,7 +116,7 @@ export function MobileStoreHeader() {
                                 <span>My Orders</span>
                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </Link>
-                            
+
                             <Link
                                 href="/contact"
                                 onClick={() => setOpen(false)}
@@ -140,8 +141,9 @@ export function MobileStoreHeader() {
                     </span>
                 </Link>
 
-                {/* Right Side - Account only (Wishlist & Cart are in bottom nav) */}
-                <div className="flex items-center">
+                {/* Right Side - Theme Toggle & Account */}
+                <div className="flex items-center gap-1">
+                    <ThemeSwitcher />
                     <UserNav />
                 </div>
             </div>

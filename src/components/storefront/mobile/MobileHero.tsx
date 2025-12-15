@@ -1,45 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 
 export function MobileHero() {
     return (
-        <section className="relative w-full overflow-hidden bg-primary">
+        <section
+            className="relative w-full overflow-hidden"
+            style={{ backgroundColor: '#1f3a93' }}
+        >
             {/* Content */}
             <div className="relative flex flex-col px-5 py-10 min-h-[280px] justify-center">
-                <h1 className="text-3xl font-extrabold tracking-tight text-primary-foreground leading-tight">
+                <h1
+                    className="text-3xl font-extrabold tracking-tight leading-tight"
+                    style={{ color: '#ffffff' }}
+                >
                     Wear Your Pride,{" "}
-                    <span className="text-white block">Adamson Style.</span>
+                    <span className="block" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                        Adamson Style.
+                    </span>
                 </h1>
-                <p className="mt-3 text-sm text-primary-foreground/90 max-w-[280px] leading-relaxed">
+                <p
+                    className="mt-3 text-sm max-w-[280px] leading-relaxed"
+                    style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                >
                     Official store for Adamson University apparel, accessories, and supplies.
                 </p>
-                
-                {/* CTA Buttons - Stack vertically on mobile */}
+
                 <div className="flex flex-col gap-3 mt-6">
                     <Link href="/category/apparel" className="w-full">
-                        <Button 
-                            size="lg" 
-                            className="w-full font-semibold bg-white text-primary hover:bg-white/90 h-12 text-base"
+                        <button
+                            className="w-full h-12 text-base font-semibold rounded-md flex items-center justify-center gap-1 transition-colors"
+                            style={{
+                                backgroundColor: 'transparent',
+                                border: '1px solid rgba(255, 255, 255, 0.7)',
+                                color: '#ffffff'
+                            }}
                         >
                             Shop Apparel
                             <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
+                        </button>
                     </Link>
                     <Link href="/category/accessories" className="w-full">
-                        <Button 
-                            size="lg" 
-                            variant="outline" 
-                            className="w-full font-semibold border-white/50 text-white hover:bg-white/10 bg-transparent h-12 text-base"
+                        <button
+                            className="w-full h-12 text-base font-semibold rounded-md flex items-center justify-center transition-colors"
+                            style={{
+                                backgroundColor: 'transparent',
+                                border: '1px solid rgba(255, 255, 255, 0.7)',
+                                color: '#ffffff'
+                            }}
                         >
                             View Accessories
-                        </Button>
+                        </button>
                     </Link>
                 </div>
             </div>
         </section>
     );
 }
+
+
 

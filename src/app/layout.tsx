@@ -3,8 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { NavigationProgress } from "@/components/layout/NavigationProgress";
 import { StoreLayoutWrapper } from "@/components/storefront/StoreLayoutWrapper";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   display: "swap", // Prevent FOUT (Flash of Unstyled Text)
   preload: true,
@@ -32,23 +33,30 @@ export default async function RootLayout({
   const categories = await getNavbarCategories();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        <Suspense fallback={null}>
-          <NavigationProgress />
-        </Suspense>
-        <AuthProvider>
-        <CategoriesProvider categories={categories}>
-        <CartProvider>
-        <WishlistProvider>
-          <StoreLayoutWrapper>
-            {children}
-          </StoreLayoutWrapper>
-          <Toaster />
-        </WishlistProvider>
-        </CartProvider>
-        </CategoriesProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
+          <AuthProvider>
+            <CategoriesProvider categories={categories}>
+              <CartProvider>
+                <WishlistProvider>
+                  <StoreLayoutWrapper>
+                    {children}
+                  </StoreLayoutWrapper>
+                  <Toaster />
+                </WishlistProvider>
+              </CartProvider>
+            </CategoriesProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

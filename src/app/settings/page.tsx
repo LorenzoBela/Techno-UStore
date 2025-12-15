@@ -7,8 +7,9 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AccountTabs } from "@/components/layout/AccountTabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
+import { useTheme } from "next-themes";
 
 // Helper to get avatar URL from various OAuth provider metadata
 function getAvatarUrl(user: User | null): string | undefined {
@@ -51,6 +52,13 @@ function SettingsRow({ label, description, action, value }: SettingsRowProps) {
 export default function SettingsPage() {
     const { user, isLoading } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // Avoid hydration mismatch for theme
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     if (isLoading) {
         return (
@@ -172,7 +180,11 @@ export default function SettingsPage() {
                             label="Dark Mode"
                             description="Toggle dark mode on or off."
                             action={
-                                <Switch disabled />
+                                <Switch
+                                    checked={mounted && theme === "dark"}
+                                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                                    disabled={!mounted}
+                                />
                             }
                         />
                     </div>

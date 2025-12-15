@@ -12,6 +12,7 @@ import { useWishlist } from "@/lib/wishlist-context";
 import { useCategories } from "@/lib/categories-context";
 import { SearchBar } from "@/components/ui/search-bar";
 import { UserNav } from "./UserNav";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -128,6 +129,14 @@ export function Header() {
                                         </Link>
                                     );
                                 })}
+
+                                {/* Dark Mode Toggle in Mobile Menu */}
+                                <div className="mt-4 pt-4 border-t">
+                                    <div className="flex items-center justify-between px-4 py-2">
+                                        <span className="text-sm font-medium">Dark Mode</span>
+                                        <ThemeSwitcher />
+                                    </div>
+                                </div>
                             </nav>
                         </SheetContent>
                     </Sheet>
@@ -157,6 +166,9 @@ export function Header() {
                         <Search className="h-5 w-5" />
                         <span className="sr-only">Search</span>
                     </Button>
+
+                    {/* Theme Toggle - visible on all screen sizes */}
+                    <ThemeSwitcher />
 
                     {/* User Actions */}
                     <nav className="flex items-center space-x-1 sm:space-x-2">
