@@ -141,8 +141,8 @@ export function Header() {
                         </SheetContent>
                     </Sheet>
 
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center space-x-2">
+                    {/* Logo - with spacing from burger */}
+                    <Link href="/" className="flex items-center space-x-2 ml-6 sm:ml-14">
                         <span className="font-black tracking-tighter uppercase text-xl sm:text-2xl" style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
                             Adamson UStore
                         </span>

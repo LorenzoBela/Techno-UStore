@@ -13,6 +13,11 @@ import {
     Pencil,
     Gift,
     Tag,
+    Coffee,
+    Smartphone,
+    Home,
+    Sparkles,
+    Briefcase,
     LucideIcon
 } from "lucide-react";
 import { useCategories } from "@/lib/categories-context";
@@ -21,7 +26,7 @@ import { useCategories } from "@/lib/categories-context";
 const iconMap: Record<string, LucideIcon> = {
     // By slug
     apparel: ShoppingBag,
-    accessories: Backpack,
+    accessories: Watch,
     supplies: NotebookPen,
     uniforms: GraduationCap,
     clothing: Shirt,
@@ -30,11 +35,12 @@ const iconMap: Record<string, LucideIcon> = {
     stationery: Pencil,
     gifts: Gift,
     merchandise: Tag,
-    bags: Backpack,
-    drinkware: Package,
-    "tech-electronics": Package,
-    "home-living": Package,
-    "stickers-novelty": Package,
+    bags: Briefcase,
+    "bags-accessories": Briefcase,
+    drinkware: Coffee,
+    "tech-electronics": Smartphone,
+    "home-living": Home,
+    "stickers-novelty": Sparkles,
     // Fallback
     default: Package,
 };

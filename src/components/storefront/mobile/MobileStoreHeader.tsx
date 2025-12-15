@@ -134,8 +134,8 @@ export function MobileStoreHeader() {
                     </SheetContent>
                 </Sheet>
 
-                {/* Logo - Center */}
-                <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+                {/* Logo - Positioned with spacing from burger */}
+                <Link href="/" className="ml-4">
                     <span className="font-black tracking-tighter uppercase text-sm">
                         Adamson UStore
                     </span>
