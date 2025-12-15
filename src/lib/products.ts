@@ -107,7 +107,7 @@ export async function getProductsByCategory(
 
         // Pagination for large categories
         const page = filters?.page || 1;
-        const pageSize = limit || filters?.limit || 24; // 24 products per page (4x6 grid)
+        const pageSize = limit || filters?.limit || 12; // 12 products per page (4x3 grid)
         const skip = (page - 1) * pageSize;
 
         const products = await prisma.product.findMany({

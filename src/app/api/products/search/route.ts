@@ -8,7 +8,7 @@ const searchProducts = unstable_cache(
     async (query: string) => {
         // Split query into words for better matching
         const searchTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
-        
+
         if (searchTerms.length === 0) return [];
 
         // Use indexed name column with case-insensitive search
@@ -45,7 +45,7 @@ const searchProducts = unstable_cache(
             slug: p.slug,
             name: p.name,
             price: typeof p.price === "number" ? p.price : Number(p.price),
-            image: p.images[0]?.url || "",
+            image: p.images[0]?.url || "/product-placeholder.png",
             category: p.category.name,
             categorySlug: p.category.slug,
             inStock: p.stock > 0,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     try {
         const results = await searchProducts(query.trim());
-        
+
         return NextResponse.json(results, {
             headers: {
                 // Cache on CDN for 5 minutes, serve stale for 10 minutes while revalidating
