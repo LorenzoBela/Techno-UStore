@@ -4,48 +4,48 @@ import { Hero } from "@/components/home/Hero";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
-import { 
-    MobileHero, 
-    MobileCategoryGrid, 
-    MobileFeaturedSection, 
+import {
+    MobileHero,
+    MobileCategoryGrid,
+    MobileFeaturedSection,
     MobileCategoryShowcase,
-    ResponsiveStorePage 
+    ResponsiveStorePage
 } from "@/components/storefront/mobile";
 import { Product } from "@/lib/types";
 
 interface HomeContentProps {
-    apparelProducts: Product[];
-    accessoriesProducts: Product[];
-    suppliesProducts: Product[];
-    uniformsProducts: Product[];
-    featuredProducts: Product[];
+    apparelProducts?: Product[];
+    accessoriesProducts?: Product[];
+    bagsProducts?: Product[];
+    drinkwareProducts?: Product[];
+    featuredProducts?: Product[];
 }
 
 export function HomeContent({
-    apparelProducts,
-    accessoriesProducts,
-    suppliesProducts,
-    uniformsProducts,
-    featuredProducts,
+    apparelProducts = [],
+    accessoriesProducts = [],
+    bagsProducts = [],
+    drinkwareProducts = [],
+    featuredProducts = [],
 }: HomeContentProps) {
     const mobileContent = (
         <main className="flex min-h-screen flex-col">
             <MobileHero />
             <MobileCategoryGrid />
-            
+
             {apparelProducts.length > 0 && (
-                <MobileCategoryShowcase 
-                    title="Top Apparel" 
-                    href="/category/apparel" 
-                    products={apparelProducts} 
+                <MobileCategoryShowcase
+                    title="Top Apparel"
+                    href="/category/apparel"
+                    products={apparelProducts}
                 />
             )}
-            
+
             {accessoriesProducts.length > 0 && (
-                <MobileCategoryShowcase 
-                    title="Trending Accessories" 
-                    href="/category/accessories" 
-                    products={accessoriesProducts} 
+                <MobileCategoryShowcase
+                    title="Trending Accessories"
+                    href="/category/accessories"
+                    products={accessoriesProducts}
                 />
             )}
 
@@ -53,19 +53,19 @@ export function HomeContent({
                 <MobileFeaturedSection products={featuredProducts} />
             )}
 
-            {suppliesProducts.length > 0 && (
-                <MobileCategoryShowcase 
-                    title="School Supplies" 
-                    href="/category/supplies" 
-                    products={suppliesProducts} 
+            {bagsProducts.length > 0 && (
+                <MobileCategoryShowcase
+                    title="Bags & Backpacks"
+                    href="/category/bags"
+                    products={bagsProducts}
                 />
             )}
-            
-            {uniformsProducts.length > 0 && (
-                <MobileCategoryShowcase 
-                    title="Official Uniforms" 
-                    href="/category/uniforms" 
-                    products={uniformsProducts} 
+
+            {drinkwareProducts.length > 0 && (
+                <MobileCategoryShowcase
+                    title="Drinkware"
+                    href="/category/drinkware"
+                    products={drinkwareProducts}
                 />
             )}
         </main>
@@ -75,20 +75,20 @@ export function HomeContent({
         <main className="flex min-h-screen flex-col">
             <Hero />
             <CategoryGrid />
-            
+
             {apparelProducts.length > 0 && (
-                <CategoryShowcase 
-                    title="Top Apparel" 
-                    href="/category/apparel" 
-                    products={apparelProducts} 
+                <CategoryShowcase
+                    title="Top Apparel"
+                    href="/category/apparel"
+                    products={apparelProducts}
                 />
             )}
-            
+
             {accessoriesProducts.length > 0 && (
-                <CategoryShowcase 
-                    title="Trending Accessories" 
-                    href="/category/accessories" 
-                    products={accessoriesProducts} 
+                <CategoryShowcase
+                    title="Trending Accessories"
+                    href="/category/accessories"
+                    products={accessoriesProducts}
                 />
             )}
 
@@ -96,29 +96,28 @@ export function HomeContent({
                 <FeaturedSection products={featuredProducts} />
             )}
 
-            {suppliesProducts.length > 0 && (
-                <CategoryShowcase 
-                    title="School Supplies" 
-                    href="/category/supplies" 
-                    products={suppliesProducts} 
+            {bagsProducts.length > 0 && (
+                <CategoryShowcase
+                    title="Bags & Backpacks"
+                    href="/category/bags"
+                    products={bagsProducts}
                 />
             )}
-            
-            {uniformsProducts.length > 0 && (
-                <CategoryShowcase 
-                    title="Official Uniforms" 
-                    href="/category/uniforms" 
-                    products={uniformsProducts} 
+
+            {drinkwareProducts.length > 0 && (
+                <CategoryShowcase
+                    title="Drinkware"
+                    href="/category/drinkware"
+                    products={drinkwareProducts}
                 />
             )}
         </main>
     );
 
     return (
-        <ResponsiveStorePage 
-            mobileContent={mobileContent} 
-            desktopContent={desktopContent} 
+        <ResponsiveStorePage
+            mobileContent={mobileContent}
+            desktopContent={desktopContent}
         />
     );
 }
-

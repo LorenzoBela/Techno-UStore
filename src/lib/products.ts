@@ -5,6 +5,9 @@ import { unstable_cache } from "next/cache";
 // Re-export types for convenience
 export type { Product, ProductVariant, Category } from "@/lib/types";
 
+// Placeholder image for products without images
+const PRODUCT_PLACEHOLDER_IMAGE = "/product-placeholder.png";
+
 // Helper to transform DB product to frontend Product
 function transformProduct(dbProduct: {
     id: string;
@@ -27,8 +30,8 @@ function transformProduct(dbProduct: {
         name: dbProduct.name,
         description: dbProduct.description || undefined,
         price: typeof dbProduct.price === 'number' ? dbProduct.price : dbProduct.price.toNumber(),
-        image: dbProduct.images[0]?.url || "",
-        images: dbProduct.images.map(img => img.url),
+        image: dbProduct.images[0]?.url || PRODUCT_PLACEHOLDER_IMAGE,
+        images: dbProduct.images.length > 0 ? dbProduct.images.map(img => img.url) : [PRODUCT_PLACEHOLDER_IMAGE],
         category: dbProduct.category.name,
         subcategory: dbProduct.subcategory || undefined,
         isNew: daysDiff <= 7, // Products created within 7 days are "new"
@@ -59,6 +62,7 @@ export async function getProductsByCategory(
 ): Promise<Product[]> {
     try {
         const where: any = {
+            isHidden: false, // Don't show hidden products on storefront
             category: {
                 slug: categorySlug.toLowerCase(),
             },
@@ -158,15 +162,23 @@ export async function getAllProducts(options?: {
 
         const [products, total] = await Promise.all([
             prisma.product.findMany({
-                include: {
-                    category: true,
-                    images: true,
-                    variants: true,
+                where: { isHidden: false }, // Don't show hidden products
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    price: true,
+                    stock: true,
+                    subcategory: true,
+                    createdAt: true,
+                    category: { select: { name: true } },
+                    images: { select: { url: true } },
+                    variants: { select: { name: true, size: true, color: true, stock: true, imageUrl: true } },
                 },
                 orderBy: { createdAt: "desc" },
                 ...(limit ? { take: limit, skip: (page - 1) * limit } : {}),
             }),
-            options?.includeTotal ? prisma.product.count() : Promise.resolve(undefined),
+            options?.includeTotal ? prisma.product.count({ where: { isHidden: false } }) : Promise.resolve(undefined),
         ]);
 
         return {
@@ -185,15 +197,23 @@ const getProductByIdOrSlugUncached = async (idOrSlug: string): Promise<Product |
         // Try to find by ID first, then by slug
         const product = await prisma.product.findFirst({
             where: {
+                isHidden: false, // Don't show hidden products
                 OR: [
                     { id: idOrSlug },
                     { slug: idOrSlug },
                 ],
             },
-            include: {
-                category: true,
-                images: true,
-                variants: true,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+                subcategory: true,
+                createdAt: true,
+                category: { select: { name: true } },
+                images: { select: { url: true } },
+                variants: { select: { name: true, size: true, color: true, stock: true, imageUrl: true } },
             },
         });
 
@@ -298,6 +318,7 @@ export const getFeaturedProducts = unstable_cache(
             const products = await prisma.product.findMany({
                 where: {
                     isFeatured: true,
+                    isHidden: false, // Don't show hidden products
                     stock: { gt: 0 }, // Only show in-stock products
                 },
                 select: {

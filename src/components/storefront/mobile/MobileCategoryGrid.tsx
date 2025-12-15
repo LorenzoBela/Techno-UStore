@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { 
-    ShoppingBag, 
-    Backpack, 
-    NotebookPen, 
-    GraduationCap, 
+import {
+    ShoppingBag,
+    Backpack,
+    NotebookPen,
+    GraduationCap,
     Package,
     Shirt,
     Watch,
@@ -13,7 +13,7 @@ import {
     Pencil,
     Gift,
     Tag,
-    LucideIcon 
+    LucideIcon
 } from "lucide-react";
 import { useCategories } from "@/lib/categories-context";
 
@@ -30,6 +30,11 @@ const iconMap: Record<string, LucideIcon> = {
     stationery: Pencil,
     gifts: Gift,
     merchandise: Tag,
+    bags: Backpack,
+    drinkware: Package,
+    "tech-electronics": Package,
+    "home-living": Package,
+    "stickers-novelty": Package,
     // Fallback
     default: Package,
 };
@@ -41,7 +46,7 @@ function getCategoryIcon(slug: string, name: string): LucideIcon {
     if (iconMap[slugLower]) {
         return iconMap[slugLower];
     }
-    
+
     // Try matching by name keywords
     const nameLower = name.toLowerCase();
     if (nameLower.includes('apparel') || nameLower.includes('cloth') || nameLower.includes('shirt')) {
@@ -65,7 +70,7 @@ function getCategoryIcon(slug: string, name: string): LucideIcon {
     if (nameLower.includes('gift')) {
         return Gift;
     }
-    
+
     return iconMap.default;
 }
 
@@ -82,11 +87,11 @@ export function MobileCategoryGrid() {
 
     return (
         <section className="py-6 -mt-2">
-            <div 
+            <div
                 className={`
                     flex gap-3 pb-2
-                    ${shouldCenter 
-                        ? "justify-center px-4" 
+                    ${shouldCenter
+                        ? "justify-center px-4"
                         : "overflow-x-auto scrollbar-hide px-4 -mx-4 snap-x snap-mandatory"
                     }
                 `}
@@ -94,8 +99,8 @@ export function MobileCategoryGrid() {
                 {categories.map((category) => {
                     const Icon = getCategoryIcon(category.slug, category.name);
                     return (
-                        <Link 
-                            key={category.id} 
+                        <Link
+                            key={category.id}
                             href={`/category/${category.slug}`}
                             className={shouldCenter ? "" : "flex-shrink-0 snap-start"}
                         >

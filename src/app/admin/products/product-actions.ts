@@ -11,6 +11,7 @@ function revalidateProducts() {
     revalidatePath("/"); // Home page showcases
     revalidatePath("/category", "layout"); // All category pages
     revalidateTag("products", "max"); // Clear unstable_cache for featured products
+    revalidateTag("categories", "max"); // Also clear category cache since products affect category counts
 }
 
 // Maximum file size: 5MB (reasonable for product images)
@@ -398,6 +399,7 @@ export async function getProducts(
                     stock: true,
                     subcategory: true,
                     isFeatured: true,
+                    isHidden: true,
                     createdAt: true,
                     category: { select: { name: true } },
                     images: { take: 1, select: { url: true } }, // Only first image for list view
@@ -422,6 +424,7 @@ export async function getProducts(
             subcategory: p.subcategory || undefined,
             stock: p.stock,
             isFeatured: p.isFeatured,
+            isHidden: p.isHidden,
             variants: p.variants.map((v) => ({
                 name: v.name || undefined,
                 size: v.size,
@@ -491,11 +494,21 @@ export async function deleteProduct(id: string, adminId?: string, adminEmail?: s
             // Check if product exists
             const product = await tx.product.findUnique({
                 where: { id },
-                include: { images: true },
+                include: {
+                    images: true,
+                    orderItems: { take: 1 }, // Check if any order items exist
+                },
             });
 
             if (!product) {
                 throw new Error("Product not found. It may have already been deleted.");
+            }
+
+            // Check if product has been ordered
+            if (product.orderItems.length > 0) {
+                throw new Error(
+                    "Cannot delete this product because it has existing orders. Consider marking it as out of stock instead."
+                );
             }
 
             // Delete product (cascades to images and variants due to schema)
@@ -592,5 +605,41 @@ export async function setFeaturedProduct(id: string, isFeatured: boolean) {
     } catch (error: any) {
         console.error("Error setting featured status:", error);
         return { error: error.message || "Failed to set featured status" };
+    }
+}
+
+// Toggle hidden status for a product
+export async function toggleHiddenProduct(id: string) {
+    try {
+        const product = await prisma.product.findUnique({
+            where: { id },
+            select: { isHidden: true, name: true },
+        });
+
+        if (!product) {
+            return { error: "Product not found" };
+        }
+
+        await prisma.product.update({
+            where: { id },
+            data: { isHidden: !product.isHidden },
+        });
+
+        revalidateProducts();
+
+        const admin = await getServerAdmin();
+        await createSystemLog({
+            action: "PRODUCT_UPDATED",
+            entityId: id,
+            entityType: "Product",
+            details: `Product ${product.isHidden ? "shown" : "hidden"}: ${product.name}`,
+            userId: admin?.id,
+            userEmail: admin?.email,
+        });
+
+        return { success: true, isHidden: !product.isHidden };
+    } catch (error: any) {
+        console.error("Error toggling hidden status:", error);
+        return { error: error.message || "Failed to toggle hidden status" };
     }
 }

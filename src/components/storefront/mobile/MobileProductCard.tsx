@@ -40,7 +40,7 @@ export const MobileProductCard = memo(function MobileProductCard({
     const handleQuickAdd = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (stock === 0) {
             toast.error("Out of stock");
             return;
@@ -65,21 +65,15 @@ export const MobileProductCard = memo(function MobileProductCard({
             <div className="relative active:scale-[0.98] transition-transform duration-150">
                 {/* Image Container */}
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-                    {image ? (
-                        <Image
-                            src={image}
-                            alt={name}
-                            fill
-                            sizes="50vw"
-                            className="object-cover"
-                            loading="lazy"
-                            quality={75}
-                        />
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">
-                            No Image
-                        </div>
-                    )}
+                    <Image
+                        src={image || "/product-placeholder.png"}
+                        alt={name}
+                        fill
+                        sizes="50vw"
+                        className="object-cover"
+                        loading="lazy"
+                        quality={75}
+                    />
 
                     {/* Badges */}
                     {isNew && (

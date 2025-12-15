@@ -84,6 +84,7 @@ model Product {
   price         Decimal
   stock         Int
   isFeatured    Boolean          @default(false) // Featured products for homepage showcase
+  isHidden      Boolean          @default(false) // Hide from storefront while keeping in database
   categoryId    String
   category      Category         @relation(fields: [categoryId], references: [id])
   images        ProductImage[]
@@ -103,6 +104,7 @@ model Product {
   @@index([stock]) // Low stock alerts
   @@index([name]) // Name search (basic)
   @@index([isFeatured]) // Featured products lookup
+  @@index([isHidden]) // Hidden products filtering
 }
 
 model ProductVariant {

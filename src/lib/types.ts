@@ -19,6 +19,7 @@ export interface Product {
     subcategory?: string;
     isNew?: boolean;
     isFeatured?: boolean;
+    isHidden?: boolean;
     stock: number;
     variants?: ProductVariant[];
 }

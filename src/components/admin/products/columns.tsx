@@ -14,12 +14,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, MoreHorizontal, Star } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Star, Eye, EyeOff } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ViewProductDialog } from "./view-product-dialog";
 import Link from "next/link";
-import { toggleFeaturedProduct, deleteProduct } from "@/app/admin/products/product-actions";
+import { toggleFeaturedProduct, toggleHiddenProduct, deleteProduct } from "@/app/admin/products/product-actions";
 import { toast } from "sonner";
 
 // Featured toggle cell component
@@ -48,6 +48,40 @@ function FeaturedToggle({ product }: { product: Product }) {
                 className="data-[state=checked]:bg-amber-500"
             />
             {isFeatured && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
+        </div>
+    );
+}
+
+// Hidden toggle cell component
+function HiddenToggle({ product }: { product: Product }) {
+    const [isPending, startTransition] = useTransition();
+    const [isHidden, setIsHidden] = useState(product.isHidden ?? false);
+
+    const handleToggle = () => {
+        startTransition(async () => {
+            const result = await toggleHiddenProduct(product.id);
+            if (result.error) {
+                toast.error(result.error);
+            } else {
+                setIsHidden(result.isHidden ?? false);
+                toast.success(result.isHidden ? "Product hidden from store" : "Product now visible in store");
+            }
+        });
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <Switch
+                checked={!isHidden}
+                onCheckedChange={handleToggle}
+                disabled={isPending}
+                className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-400"
+            />
+            {isHidden ? (
+                <EyeOff className="h-4 w-4 text-red-500" />
+            ) : (
+                <Eye className="h-4 w-4 text-green-500" />
+            )}
         </div>
     );
 }
@@ -149,6 +183,14 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => {
             const product = row.original;
             return <FeaturedToggle product={product} />;
+        },
+    },
+    {
+        id: "visibility",
+        header: "Visibility",
+        cell: ({ row }) => {
+            const product = row.original;
+            return <HiddenToggle product={product} />;
         },
     },
     {

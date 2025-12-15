@@ -36,7 +36,8 @@ function revalidateCategories() {
     revalidatePath("/admin/products");
     revalidatePath("/"); // Home page
     revalidatePath("/category", "layout"); // All category pages
-    revalidateTag("categories", "page");
+    revalidateTag("categories", "max"); // Clear unstable_cache for navbar categories
+    revalidateTag("products", "max"); // Also clear product cache since products depend on categories
 }
 
 // Generate slug from name
@@ -137,9 +138,9 @@ export async function getSubcategoriesByCategoryName(categoryName: string): Prom
             where: { name: categoryName },
             select: { id: true },
         });
-        
+
         if (!category) return [];
-        
+
         return getSubcategoriesByCategory(category.id);
     } catch (error) {
         console.error("Error fetching subcategories by name:", error);
@@ -248,8 +249,8 @@ export async function deleteCategory(id: string): Promise<{ success?: boolean; e
         }
 
         if (category._count.products > 0) {
-            return { 
-                error: `Cannot delete category "${category.name}" because it has ${category._count.products} products. Please move or delete the products first.` 
+            return {
+                error: `Cannot delete category "${category.name}" because it has ${category._count.products} products. Please move or delete the products first.`
             };
         }
 
@@ -374,8 +375,8 @@ export async function deleteSubcategory(id: string): Promise<{ success?: boolean
         }
 
         if (subcategory._count.products > 0) {
-            return { 
-                error: `Cannot delete subcategory "${subcategory.name}" because it has ${subcategory._count.products} products. Please move or delete the products first.` 
+            return {
+                error: `Cannot delete subcategory "${subcategory.name}" because it has ${subcategory._count.products} products. Please move or delete the products first.`
             };
         }
 
@@ -427,7 +428,7 @@ export async function migrateSubcategories(): Promise<{ success?: boolean; error
         let migrated = 0;
         for (const [, { categoryId, subcategory }] of uniqueCombos) {
             const slug = generateSlug(subcategory);
-            
+
             // Create or find subcategory
             const sub = await prisma.subcategory.upsert({
                 where: {

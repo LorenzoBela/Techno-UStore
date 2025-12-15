@@ -73,7 +73,7 @@ export function ProductCard({
                 if (img && !imageList.includes(img)) imageList.push(img);
             });
         }
-        return imageList.length > 0 ? imageList : ["/placeholder.svg"];
+        return imageList.length > 0 ? imageList : ["/product-placeholder.png"];
     })();
 
     const hasMultipleImages = allImages.length > 1;
