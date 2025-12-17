@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -76,9 +77,16 @@ export function Header() {
                             <div className="p-6 border-b">
                                 <Link
                                     href="/"
-                                    className="flex items-center"
+                                    className="flex items-center gap-3"
                                     onClick={() => setIsMenuOpen(false)}
                                 >
+                                    <Image
+                                        src="/adamson-logo.png"
+                                        alt="Adamson University Logo"
+                                        width={48}
+                                        height={48}
+                                        className="object-contain"
+                                    />
                                     <span className="font-black tracking-tighter uppercase text-xl">
                                         Adamson UStore
                                     </span>
@@ -142,7 +150,14 @@ export function Header() {
                     </Sheet>
 
                     {/* Logo - with spacing from burger */}
-                    <Link href="/" className="flex items-center space-x-2 ml-6 sm:ml-14">
+                    <Link href="/" className="flex items-center gap-2 sm:gap-3 ml-4 sm:ml-10">
+                        <Image
+                            src="/adamson-logo.png"
+                            alt="Adamson University Logo"
+                            width={48}
+                            height={48}
+                            className="object-contain sm:w-14 sm:h-14"
+                        />
                         <span className="font-black tracking-tighter uppercase text-xl sm:text-2xl" style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
                             Adamson UStore
                         </span>

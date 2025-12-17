@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -41,9 +42,18 @@ export function MobileStoreHeader() {
                             <Link
                                 href="/"
                                 onClick={() => setOpen(false)}
-                                className="font-black tracking-tighter uppercase text-lg"
+                                className="flex items-center gap-3"
                             >
-                                Adamson UStore
+                                <Image
+                                    src="/adamson-logo.png"
+                                    alt="Adamson University Logo"
+                                    width={44}
+                                    height={44}
+                                    className="object-contain"
+                                />
+                                <span className="font-black tracking-tighter uppercase text-lg">
+                                    Adamson UStore
+                                </span>
                             </Link>
                         </div>
 
@@ -135,7 +145,14 @@ export function MobileStoreHeader() {
                 </Sheet>
 
                 {/* Logo - Positioned with spacing from burger */}
-                <Link href="/" className="ml-4">
+                <Link href="/" className="flex items-center gap-2 ml-2">
+                    <Image
+                        src="/adamson-logo.png"
+                        alt="Adamson University Logo"
+                        width={36}
+                        height={36}
+                        className="object-contain"
+                    />
                     <span className="font-black tracking-tighter uppercase text-sm">
                         Adamson UStore
                     </span>
