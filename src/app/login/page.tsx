@@ -25,22 +25,15 @@ function LoginForm() {
         const email = formData.get("email") as string;
         const password = formData.get("password") as string;
 
-        // Check for admin login
-        if (email === "admin@technoustore.com" && password === "admin123") {
-            document.cookie = "admin_session=true; path=/";
-            toast.success("Welcome back, Admin!");
-            router.push("/admin");
-            return;
-        }
-
         // Use Supabase auth
         const { error } = await signIn(email, password);
-        
+
         if (error) {
             toast.error(error.message || "Invalid credentials");
             setIsLoading(false);
         } else {
             toast.success("Welcome back!");
+            setIsLoading(false);
             router.push(redirectUrl);
         }
     }
@@ -68,8 +61,8 @@ function LoginForm() {
     }, [router]);
 
     // Build the register URL with redirect param
-    const registerUrl = redirectUrl !== "/" 
-        ? `/register?redirect=${encodeURIComponent(redirectUrl)}` 
+    const registerUrl = redirectUrl !== "/"
+        ? `/register?redirect=${encodeURIComponent(redirectUrl)}`
         : "/register";
 
     return (

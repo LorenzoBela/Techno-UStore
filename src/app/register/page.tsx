@@ -22,7 +22,7 @@ function RegisterForm() {
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        
+
         if (!privacyAccepted) {
             toast.error("Please accept the Data Privacy Policy");
             return;
@@ -50,15 +50,16 @@ function RegisterForm() {
         }
 
         const { error } = await signUp(email, password, { name, phone });
-        
+
         if (error) {
             toast.error(error.message || "Failed to create account");
             setIsLoading(false);
         } else {
             toast.success("Account created! Please check your email to verify your account.");
+            setIsLoading(false);
             // Redirect to login with the same redirect param
-            const loginUrl = redirectUrl !== "/" 
-                ? `/login?redirect=${encodeURIComponent(redirectUrl)}` 
+            const loginUrl = redirectUrl !== "/"
+                ? `/login?redirect=${encodeURIComponent(redirectUrl)}`
                 : "/login";
             router.push(loginUrl);
         }
@@ -87,8 +88,8 @@ function RegisterForm() {
     }, [router]);
 
     // Build the login URL with redirect param
-    const loginUrl = redirectUrl !== "/" 
-        ? `/login?redirect=${encodeURIComponent(redirectUrl)}` 
+    const loginUrl = redirectUrl !== "/"
+        ? `/login?redirect=${encodeURIComponent(redirectUrl)}`
         : "/login";
 
     return (
@@ -172,8 +173,8 @@ function RegisterForm() {
                                 />
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Checkbox 
-                                    id="privacy" 
+                                <Checkbox
+                                    id="privacy"
                                     checked={privacyAccepted}
                                     onCheckedChange={(checked) => setPrivacyAccepted(checked === true)}
                                     disabled={isLoading}

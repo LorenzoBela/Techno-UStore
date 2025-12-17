@@ -168,18 +168,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signUp = async (email: string, password: string, metadata?: { name?: string; phone?: string }) => {
         const supabase = getSupabaseClient();
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: metadata,
             },
         });
+
+        // If signup succeeded and we have a session, sync immediately
+        // This handles cases where email confirmation is disabled
+        if (!error && data.session?.access_token) {
+            console.log("Signup succeeded with session, syncing user to database...");
+            await syncUserToDatabase(data.session.access_token);
+        }
+
         return { error };
     };
 
     const signOut = async () => {
         const supabase = getSupabaseClient();
+        // Clear state immediately for responsive UI
+        setSession(null);
+        setUser(null);
+        // Then sign out from Supabase
         await supabase.auth.signOut();
         // Clear admin session cookie as well
         document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
