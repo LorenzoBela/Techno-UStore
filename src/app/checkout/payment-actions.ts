@@ -3,6 +3,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { notifyAdminsPaymentReceived } from "@/lib/email";
 
 export async function uploadPaymentProof(formData: FormData) {
     const file = formData.get("file");
@@ -62,6 +63,9 @@ export async function uploadPaymentProof(formData: FormData) {
         revalidatePath(`/orders/${orderId}`);
         revalidatePath("/admin/orders");
 
+        // Notify all admins about the new payment proof
+        await notifyAdminsPaymentReceived(orderId, publicUrl);
+
         return { success: true };
 
     } catch (error) {
@@ -69,3 +73,4 @@ export async function uploadPaymentProof(formData: FormData) {
         return { success: false, error: "Internal server error" };
     }
 }
+

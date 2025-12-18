@@ -1,10 +1,14 @@
 "use client";
 
+import * as React from "react";
 import { useDeviceDetect } from "@/lib/hooks/useDeviceDetect";
 import { MobileHeader } from "@/components/admin/mobile/MobileHeader";
 import { MobileUserCard } from "@/components/admin/mobile/MobileUserCard";
 import { UsersTable } from "@/components/admin/users/UsersTable";
+import { UsersGrid } from "@/components/admin/users/UsersGrid";
 import { columns } from "@/components/admin/users/columns";
+import { Button } from "@/components/ui/button";
+import { LayoutGrid, List } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 interface UsersContentProps {
@@ -12,8 +16,11 @@ interface UsersContentProps {
     error?: string;
 }
 
+type ViewMode = "grid" | "table";
+
 export function UsersContent({ users, error }: UsersContentProps) {
     const { isMobile, isLoading } = useDeviceDetect();
+    const [viewMode, setViewMode] = React.useState<ViewMode>("grid");
 
     if (isLoading) {
         return (
@@ -54,7 +61,7 @@ export function UsersContent({ users, error }: UsersContentProps) {
         return (
             <div className="flex flex-col min-h-screen">
                 <MobileHeader title="Users" />
-                
+
                 <div className="flex-1 p-4 space-y-4">
                     <p className="text-sm text-muted-foreground">
                         {users.length} registered users
@@ -81,9 +88,32 @@ export function UsersContent({ users, error }: UsersContentProps) {
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Users</h2>
+                <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/50">
+                    <Button
+                        variant={viewMode === "grid" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode("grid")}
+                        className="h-8 w-8 p-0"
+                    >
+                        <LayoutGrid className="h-4 w-4" />
+                        <span className="sr-only">Grid view</span>
+                    </Button>
+                    <Button
+                        variant={viewMode === "table" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setViewMode("table")}
+                        className="h-8 w-8 p-0"
+                    >
+                        <List className="h-4 w-4" />
+                        <span className="sr-only">Table view</span>
+                    </Button>
+                </div>
             </div>
-            <UsersTable columns={columns} data={users} />
+            {viewMode === "grid" ? (
+                <UsersGrid data={users} />
+            ) : (
+                <UsersTable columns={columns} data={users} />
+            )}
         </div>
     );
 }
-

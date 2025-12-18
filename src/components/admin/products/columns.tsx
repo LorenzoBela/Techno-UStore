@@ -182,7 +182,7 @@ export const columns: ColumnDef<Product>[] = [
         header: "Featured",
         cell: ({ row }) => {
             const product = row.original;
-            return <FeaturedToggle product={product} />;
+            return <FeaturedToggle key={product.id} product={product} />;
         },
     },
     {
@@ -190,7 +190,7 @@ export const columns: ColumnDef<Product>[] = [
         header: "Visibility",
         cell: ({ row }) => {
             const product = row.original;
-            return <HiddenToggle product={product} />;
+            return <HiddenToggle key={product.id} product={product} />;
         },
     },
     {

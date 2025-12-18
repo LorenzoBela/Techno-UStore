@@ -331,6 +331,8 @@ export interface ProductFilters {
     maxPrice?: number;
     search?: string;
     stockFilter?: "all" | "in-stock" | "low-stock" | "out-of-stock";
+    featuredFilter?: "all" | "featured" | "not-featured";
+    visibilityFilter?: "all" | "visible" | "hidden";
 }
 
 export interface PaginatedProducts {
@@ -386,6 +388,21 @@ export async function getProducts(
                     break;
             }
         }
+
+        // Featured filter
+        if (filters?.featuredFilter && filters.featuredFilter !== "all") {
+            where.isFeatured = filters.featuredFilter === "featured";
+        }
+
+        // Visibility filter
+        if (filters?.visibilityFilter && filters.visibilityFilter !== "all") {
+            where.isHidden = filters.visibilityFilter === "hidden";
+        }
+
+        // Debug logging
+        console.log("=== getProducts Debug ===");
+        console.log("Filters received:", JSON.stringify(filters, null, 2));
+        console.log("Where clause:", JSON.stringify(where, null, 2));
 
         // Parallel count and fetch for efficiency
         const [products, count] = await Promise.all([

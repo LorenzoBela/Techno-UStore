@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Product } from "@/lib/types";
 
 interface ProductsContentProps {
@@ -26,6 +27,8 @@ interface ProductsContentProps {
     category: string;
     search: string;
     stockFilter: string;
+    featuredFilter: string;
+    visibilityFilter: string;
     categories: string[];
 }
 
@@ -37,9 +40,33 @@ export function ProductsContent({
     category,
     search,
     stockFilter,
+    featuredFilter,
+    visibilityFilter,
     categories,
 }: ProductsContentProps) {
     const { isMobile, isLoading } = useDeviceDetect();
+    const router = useRouter();
+
+    const handleFilterChange = (key: string, value: string) => {
+        const params = new URLSearchParams();
+        if (category) params.set("category", category);
+        if (search) params.set("search", search);
+        if (stockFilter !== "all") params.set("stock", stockFilter);
+        if (featuredFilter !== "all") params.set("featured", featuredFilter);
+        if (visibilityFilter !== "all") params.set("visibility", visibilityFilter);
+
+        // Update specific key
+        if (value === "all") {
+            params.delete(key);
+        } else {
+            params.set(key, value);
+        }
+
+        // Reset page
+        params.delete("page");
+
+        router.push(`/admin/products?${params.toString()}`);
+    };
 
     const buildUrl = (newPage: number) => {
         const params = new URLSearchParams();
@@ -47,6 +74,8 @@ export function ProductsContent({
         if (category) params.set("category", category);
         if (search) params.set("search", search);
         if (stockFilter !== "all") params.set("stock", stockFilter);
+        if (featuredFilter !== "all") params.set("featured", featuredFilter);
+        if (visibilityFilter !== "all") params.set("visibility", visibilityFilter);
         return `/admin/products?${params.toString()}`;
     };
 
@@ -62,8 +91,8 @@ export function ProductsContent({
     if (isMobile) {
         return (
             <div className="flex flex-col min-h-screen">
-                <MobileHeader 
-                    title="Products" 
+                <MobileHeader
+                    title="Products"
                     action={
                         <Link href="/admin/products/new">
                             <Button size="icon" className="h-9 w-9">
@@ -72,7 +101,7 @@ export function ProductsContent({
                         </Link>
                     }
                 />
-                
+
                 <div className="flex-1 p-4 space-y-4">
                     {/* Search and Filters */}
                     <div className="space-y-3">
@@ -85,39 +114,65 @@ export function ProductsContent({
                             />
                             <input type="hidden" name="category" value={category} />
                             <input type="hidden" name="stock" value={stockFilter} />
+                            <input type="hidden" name="featured" value={featuredFilter} />
+                            <input type="hidden" name="visibility" value={visibilityFilter} />
                         </form>
-                        
-                        <div className="flex gap-2">
-                            <form className="flex-1">
-                                <input type="hidden" name="search" value={search} />
-                                <input type="hidden" name="stock" value={stockFilter} />
-                                <Select name="category" defaultValue={category || "all"}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Categories</SelectItem>
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </form>
-                            <form className="flex-1">
-                                <input type="hidden" name="search" value={search} />
-                                <input type="hidden" name="category" value={category} />
-                                <Select name="stock" defaultValue={stockFilter}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Stock" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Stock</SelectItem>
-                                        <SelectItem value="in-stock">In Stock</SelectItem>
-                                        <SelectItem value="low-stock">Low Stock</SelectItem>
-                                        <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </form>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <Select
+                                defaultValue={category || "all"}
+                                onValueChange={(value) => handleFilterChange("category", value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                defaultValue={stockFilter}
+                                onValueChange={(value) => handleFilterChange("stock", value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Stock" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Stock</SelectItem>
+                                    <SelectItem value="in-stock">In Stock</SelectItem>
+                                    <SelectItem value="low-stock">Low Stock</SelectItem>
+                                    <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                defaultValue={featuredFilter}
+                                onValueChange={(value) => handleFilterChange("featured", value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Featured" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Products</SelectItem>
+                                    <SelectItem value="featured">Featured</SelectItem>
+                                    <SelectItem value="not-featured">Not Featured</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                defaultValue={visibilityFilter}
+                                onValueChange={(value) => handleFilterChange("visibility", value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Visibility" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Visibility</SelectItem>
+                                    <SelectItem value="visible">Visible</SelectItem>
+                                    <SelectItem value="hidden">Hidden</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
@@ -196,11 +251,15 @@ export function ProductsContent({
                     />
                     <input type="hidden" name="category" value={category} />
                     <input type="hidden" name="stock" value={stockFilter} />
+                    <input type="hidden" name="featured" value={featuredFilter} />
+                    <input type="hidden" name="visibility" value={visibilityFilter} />
                 </form>
-                <form className="flex gap-2">
-                    <input type="hidden" name="search" value={search} />
-                    <Select name="category" defaultValue={category || "all"}>
-                        <SelectTrigger className="w-[160px]">
+                <div className="flex flex-wrap gap-2">
+                    <Select
+                        defaultValue={category || "all"}
+                        onValueChange={(value) => handleFilterChange("category", value)}
+                    >
+                        <SelectTrigger className="w-[150px]">
                             <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -210,8 +269,11 @@ export function ProductsContent({
                             ))}
                         </SelectContent>
                     </Select>
-                    <Select name="stock" defaultValue={stockFilter}>
-                        <SelectTrigger className="w-[140px]">
+                    <Select
+                        defaultValue={stockFilter}
+                        onValueChange={(value) => handleFilterChange("stock", value)}
+                    >
+                        <SelectTrigger className="w-[130px]">
                             <SelectValue placeholder="Stock" />
                         </SelectTrigger>
                         <SelectContent>
@@ -221,8 +283,33 @@ export function ProductsContent({
                             <SelectItem value="out-of-stock">Out of Stock</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="submit" variant="secondary">Filter</Button>
-                </form>
+                    <Select
+                        defaultValue={featuredFilter}
+                        onValueChange={(value) => handleFilterChange("featured", value)}
+                    >
+                        <SelectTrigger className="w-[130px]">
+                            <SelectValue placeholder="Featured" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Products</SelectItem>
+                            <SelectItem value="featured">Featured</SelectItem>
+                            <SelectItem value="not-featured">Not Featured</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        defaultValue={visibilityFilter}
+                        onValueChange={(value) => handleFilterChange("visibility", value)}
+                    >
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Visibility" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Visibility</SelectItem>
+                            <SelectItem value="visible">Visible</SelectItem>
+                            <SelectItem value="hidden">Hidden</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="rounded-md border">

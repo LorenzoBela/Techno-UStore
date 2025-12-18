@@ -3,6 +3,11 @@
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { createSystemLog, getServerAdmin } from "@/lib/logger";
+import {
+    notifyUserOrderAccepted,
+    notifyUserReadyForPickup,
+    notifyUserOrderCompleted
+} from "@/lib/email";
 
 export interface AdminOrder {
     id: string;
@@ -223,6 +228,13 @@ export async function updateOrderStatus(
             userEmail: adminId ? undefined : 'unknown',
         });
 
+        // Send email notifications based on status change
+        if (newStatus === 'ready_for_pickup') {
+            await notifyUserReadyForPickup(orderId);
+        } else if (newStatus === 'completed') {
+            await notifyUserOrderCompleted(orderId);
+        }
+
         revalidateOrders();
         return {
             success: true,
@@ -311,6 +323,13 @@ export async function verifyPayment(
             details: action === "reject" ? `Payment rejected. Reason: ${rejectionReason}` : "Payment verified and order accepted",
             userId: adminId,
         });
+
+        // Send email notifications
+        if (action === "verify") {
+            // Notify customer their order was accepted and is ready for pickup
+            await notifyUserOrderAccepted(orderId);
+            await notifyUserReadyForPickup(orderId, pickupDate?.toISOString());
+        }
 
         revalidateOrders();
         return { success: true };

@@ -84,7 +84,7 @@ export function OrdersContent({
         return (
             <div className="flex flex-col min-h-screen">
                 <MobileHeader title="Orders" />
-                
+
                 <div className="flex-1 p-4 space-y-4">
                     <div className="space-y-3">
                         <form>
@@ -94,7 +94,7 @@ export function OrdersContent({
                                 defaultValue={search}
                             />
                         </form>
-                        
+
                         <form>
                             <input type="hidden" name="search" value={search} />
                             <Select name="status" defaultValue={status}>

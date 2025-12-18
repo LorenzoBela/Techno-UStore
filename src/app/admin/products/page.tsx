@@ -8,18 +8,34 @@ export const dynamic = 'force-dynamic';
 export default async function ProductsPage({
     searchParams,
 }: {
-    searchParams: Promise<{ 
-        page?: string; 
-        category?: string; 
+    searchParams: Promise<{
+        page?: string;
+        category?: string;
         search?: string;
         stock?: string;
+        featured?: string;
+        visibility?: string;
     }>;
 }) {
     const params = await searchParams;
-    const page = parseInt(params.page || "1", 10);
-    const category = params.category || "";
-    const search = params.search || "";
-    const stockFilter = (params.stock || "all") as "all" | "in-stock" | "low-stock" | "out-of-stock";
+    const page = parseInt(Array.isArray(params.page) ? params.page[0] : (params.page || "1"), 10);
+
+    // Normalize string/array inputs
+    const getParam = (p: string | string[] | undefined) => Array.isArray(p) ? p[0] : (p || "");
+
+    const rawCategory = getParam(params.category);
+    const category = rawCategory === "all" ? "" : rawCategory;
+
+    const search = getParam(params.search);
+
+    const rawStock = getParam(params.stock) || "all";
+    const stockFilter = rawStock as "all" | "in-stock" | "low-stock" | "out-of-stock";
+
+    const rawFeatured = getParam(params.featured) || "all";
+    const featuredFilter = rawFeatured as "all" | "featured" | "not-featured";
+
+    const rawVisibility = getParam(params.visibility) || "all";
+    const visibilityFilter = rawVisibility as "all" | "visible" | "hidden";
 
     // Parallel fetch for products and categories
     const [{ products, count, totalPages }, categories] = await Promise.all([
@@ -27,6 +43,8 @@ export default async function ProductsPage({
             category: category ? [category] : undefined,
             search: search || undefined,
             stockFilter,
+            featuredFilter,
+            visibilityFilter,
         }),
         getCategories(),
     ]);
@@ -40,7 +58,10 @@ export default async function ProductsPage({
             category={category}
             search={search}
             stockFilter={stockFilter}
+            featuredFilter={featuredFilter}
+            visibilityFilter={visibilityFilter}
             categories={categories}
         />
     );
 }
+
